@@ -28,8 +28,6 @@ class ConfigArgs(enum.Enum):
     TOKENIZE_NUM_PROCESS = "tokenize_num_process"
     BATCH_SIZE = "batch_size"
     TRAIN_STATS = "train_stats"
-    SWITCH_TRANSFORMER_NUM_EXPERTS = "switch_transformer_num_experts"
-    QWEN_NUM_EXPERTS = "qwen_num_experts" # number of experts for Qwen model
     RUN_NUM = "run_num"  # number of the run used for codecarbon file tracking
     PROJECT_NAME = "project_name"  # name of the project used for codecarbon file tracking
     LEARNING_RATE = "learning_rate"  # learning rate for training
@@ -65,13 +63,6 @@ class Config:
         self.train_stats : str = _get_arg(args, ConfigArgs.TRAIN_STATS.value, str)
         """Type of statistics to gather. By default it is set to no-op, which 
         ignores everything."""
-        self.switch_transformers_num_experts : int = _get_arg(args, ConfigArgs.SWITCH_TRANSFORMER_NUM_EXPERTS.value, int)
-        """When the selected model is switch-base-n, sets the number of experts 
-        per sparse layer. It is recommended to only use powers of two."""
-
-        self.qwen_num_experts : int = _get_arg(args, ConfigArgs.QWEN_NUM_EXPERTS.value, int)
-        """When the selected model is qwen, sets the number of experts per sparse layer. 
-        It is recommended to only use powers of two."""
 
         self.run_num : int = _get_arg(args, ConfigArgs.RUN_NUM.value, int)
         """The run number used for codecarbon file tracking."""

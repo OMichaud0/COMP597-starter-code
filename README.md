@@ -107,9 +107,9 @@ TODO: add section for setup and installations
 
 TODO: add section for resources
 ### CodeCarbon Resources
-- [olivier-tutorial-code-carbon](https://colab.research.google.com/drive/1eBLk-Fne8YCzuwVLiyLU8w0wNsrfh3xq?usp=sharing#scrollTo=rUCBJMaymHw0)
-- [laura-documentation](https://docs.google.com/document/d/1GSxPYXRVjkb1eSwnZZBsSQMVICRLdM_pM-iEVeivAIE/edit?tab=t.0#heading=h.br99yzi307vk)
-- [laura documentation](https://docs.google.com/document/d/1Ihfniv1CaWz79tO4IcXx3JG7pAZDIGWigAMDKiVTNDc/edit?tab=t.xsnyx8yl1r62)
+- [olivier-tutorial-code-carbon](https://colab.research.google.com/drive/1eBLk-Fne8YCzuwVLiyLU8w0wNsrfh3xq)
+- [laura-documentation](https://docs.google.com/document/d/1GSxPYXRVjkb1eSwnZZBsSQMVICRLdM_pM-iEVeivAIE/edit)
+- [laura documentation](https://docs.google.com/document/d/1Ihfniv1CaWz79tO4IcXx3JG7pAZDIGWigAMDKiVTNDc/edit)
 
 TODO: add section for how to run experiments, how to edit files to add a new model etc.
 

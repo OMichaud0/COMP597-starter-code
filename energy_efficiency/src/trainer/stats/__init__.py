@@ -12,7 +12,7 @@ from src.trainer.stats.averaged_energy import AveragedEnergy
 from src.trainer.stats.utils import *
 import src.config as config
 
-def init_from_conf(conf : config.Config, **kwargs):
+def init_from_conf(conf : config.Config, **kwargs) -> TrainerStats:
     """Factory for initialize a `TrainerStats`.
 
     This is a factory that initializes a `TrainerStats` objects using a 

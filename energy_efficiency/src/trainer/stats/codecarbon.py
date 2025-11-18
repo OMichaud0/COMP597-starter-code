@@ -259,17 +259,16 @@ class CodeCarbonStats(base.TrainerStats):
 
         print(f"\n CODECARBON LOSS LOGGING: Rank {gpu_id} - Run {self.run_num} - Losses saved to {save_file_path}")
 
-    def log_loss(self, loss: float, rank: int) -> None:
+    def log_loss(self, loss: torch.Tensor) -> None:
         """
         Take the loss from the training loop and log it to the CodeCarbon tracker file.
         """
         self.losses.append(
             {
-                "gpu_rank": rank,
                 "task_name": f"Step #{self.iteration}",
                 "loss": loss
             }
         )
         
         # print for debugging and tracking purposes
-        print(f"\n CODECARBON LOSS LOGGING: Rank {rank} - Step {self.iteration} - Loss: {loss:.4f}")
+        print(f"\n CODECARBON LOSS LOGGING: Step {self.iteration} - Loss: {loss:.4f}")

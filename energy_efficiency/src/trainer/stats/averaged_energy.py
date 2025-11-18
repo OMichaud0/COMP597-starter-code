@@ -71,7 +71,7 @@ class AveragedEnergy(base.TrainerStats):
     def stop_forward(self) -> None:
         pass
 
-    def log_loss(self, loss: float, rank: int) -> None:
+    def log_loss(self, loss: torch.Tensor) -> None:
         pass
 
     def start_backward(self) -> None:

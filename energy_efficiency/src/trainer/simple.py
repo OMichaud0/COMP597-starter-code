@@ -1,5 +1,6 @@
 from typing import Any, Dict, Optional
 import src.trainer.base as base
+import src.config as config
 import src.trainer.stats as stats
 import torch
 import torch.nn as nn
@@ -31,8 +32,6 @@ class SimpleTrainer(base.Trainer):
     ----------
     loader : torch.utils.data.DataLoader
         The object used to load data during training.
-    stats : src.trainer.stats.TrainerStats
-        The `TrainerStats` object used to gather statistics.
     model : torch.nn.Module
         The model to train as provided to the constructor.
     optimizer : torch.optim.Optimizer
@@ -43,6 +42,8 @@ class SimpleTrainer(base.Trainer):
     device : torch.device
         The device used to move the input batches as provided to the 
         constructor.
+    stats : src.trainer.stats.TrainerStats
+        The `TrainerStats` object used to gather statistics.
 
     """
 
@@ -53,10 +54,11 @@ class SimpleTrainer(base.Trainer):
                  lr_scheduler : optim.lr_scheduler.LRScheduler, 
                  device : torch.device, 
                  stats : stats.TrainerStats,
-                 conf: Optional[base.config.Config] = None):
+                 conf: Optional[config.Config] = None):
         super().__init__(model, loader, device, stats)
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
+        # TODO remove conf as it is unused.
         self.conf = conf
 
     def checkpoint_dict(self, i: int) -> Dict[str, Any]:

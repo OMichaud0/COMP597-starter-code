@@ -1,4 +1,5 @@
 import src.trainer.stats.base as base
+import torch
 
 class NOOPTrainerStats(base.TrainerStats):
     """NOOP Trainer stats to ignore data accumulation.
@@ -53,5 +54,5 @@ class NOOPTrainerStats(base.TrainerStats):
     def log_stats(self) -> None:
         pass
 
-    def log_loss(self, loss: float, rank: int) -> None:
+    def log_loss(self, loss: torch.Tensor) -> None:
         pass

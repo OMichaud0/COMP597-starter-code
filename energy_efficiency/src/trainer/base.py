@@ -2,12 +2,10 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Tuple
 from src.trainer.stats.utils import RunningEnergy
 import src.trainer.stats as stats
-import src.trainer.utils as utils
 import torch
 import torch.nn as nn
 import torch.utils.data as data
 import tqdm.auto
-import src.config as config
 
 class Trainer(ABC):
     """Base class implemented by all trainer objects.
@@ -27,6 +25,8 @@ class Trainer(ABC):
         An object to gather statistics during training. It is an optional 
         parameter. The default `NOOPTrainerStats` will simply no-op on every 
         call used to gather statistical data.
+    enable_checkpointing
+        Whether or not to checkpoint the model.
     checkpoint_frequency
         The after how many steps a checkpoint is saved.
 
@@ -40,8 +40,10 @@ class Trainer(ABC):
         The device on which the model resides and where batches will be moved to.
     stats : src.trainer.stats.TrainerStats
         The `TrainerStats` object used to gather statistics.
+    enable_checkpointing : bool
+        Whether or not the model will be checkpointed during training.
     checkpoint_frequency : int
-        The after how many steps a checkpoint is saved.
+        After how many steps a checkpoint is saved.
 
     """
 
@@ -272,15 +274,13 @@ class Trainer(ABC):
                 print(f"checkpoint energy consumption: {checkpoint_energy.get_last()}")
 
             # for every rank, log the loss
-            self.stats.log_loss(loss, 0) #rank 0 for single GPU
+            self.stats.log_loss(loss)
             self.stats.log_step()
 
             if descr is not None:
                 progress_bar.clear()
                 print(descr)
             progress_bar.clear()
-            
-            progress_bar.set_description(f'loss: {loss : .4f}')
             progress_bar.update(1)
 
         self.stats.stop_train()

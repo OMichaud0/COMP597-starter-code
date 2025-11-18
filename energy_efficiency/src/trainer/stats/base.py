@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import torch
 
 class TrainerStats(ABC):
     """Abstract class used by trainers to accumulate statistics.
@@ -68,7 +69,7 @@ class TrainerStats(ABC):
         pass
 
     @abstractmethod
-    def log_loss(self, loss: float, rank: int) -> None:
+    def log_loss(self, loss: torch.Tensor) -> None:
         """Logs the loss of the current step by passing it to the stats.
 
         """

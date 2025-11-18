@@ -124,6 +124,6 @@ class SimpleTrainerStats(base.TrainerStats):
         # print("###############   CHECKPOINTING    #################")
         # self.save_checkpoint_stats.log_analysis()
 
-    def log_loss(self, loss: float, rank: int) -> None:
+    def log_loss(self, loss : torch.Tensor) -> None:
         pass
 

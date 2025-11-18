@@ -1,42 +1,16 @@
 from typing import Any, Dict, Optional, Tuple
-from datasets import load_dataset
 import argparse
 import gc
-import src.models.switch_transformer as switch_transformer
-import src.models.qwen as qwen
-import src.models.unet3d_mlcommons.pytorch as unet3d_ml_commons
-import src.models.unet3d.unet3d as unet3d_simple
-import src.models.gpt2.gpt2 as gpt2
+import src.data as data
+import src.models as models
 import src.trainer as trainer
 import src.config as config
 
-def load_data(conf : config.Config):
-    train_files = None
-    if conf.dataset_train_files is not None and conf.dataset_train_files != "":
-        train_files = {"train": conf.dataset_train_files}
-    return load_dataset(conf.dataset, data_files=train_files, split=conf.dataset_split, num_proc=conf.dataset_load_num_proc)
-
 def process_conf(conf : config.Config) -> Tuple[trainer.Trainer, Optional[Dict[str, Any]]]:
-    dataset = load_data(conf)
+    dataset = data.load_data(conf)
     print(f"Dataset loaded with {len(dataset)} samples.")
 
-    if conf.model == "switch-base-8":
-        return switch_transformer.switch_base_8_init(conf, dataset)
-    elif conf.model == "switch-base-n":
-        return switch_transformer.switch_base_n_init(conf, dataset)
-    elif conf.model == "qwen-moe":
-        return qwen.qwen_init(conf, dataset)
-    elif conf.model == "unet3d_mlcommons":
-        # call the MLCommons unet3d training script
-        data_dir = "/raid/data/imseg/raw-data/kits19/preproc-data" # unet3d dataset on the server
-        return unet3d_ml_commons.unet3d_mlcommons_init(conf, data_dir)
-    elif conf.model == "unet3d":
-        data_dir = "/raid/data/imseg/raw-data/kits19/preproc-data" # unet3d dataset on the server
-        return unet3d_simple.unet3d_mlcommons_init(conf, data_dir)
-    elif conf.model == "gpt2":
-        return gpt2.gpt2_init(conf, dataset)
-    else:
-        raise Exception(f"Unknown model {conf.model}")
+    return models.model_factory(conf, dataset)
 
 def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -52,8 +26,6 @@ def get_args() -> argparse.Namespace:
     parser.add_argument(config.ConfigArgs.TOKENIZE_NUM_PROCESS.to_arg(), type=int, help="Number of threads used to tokenize the dataset.", default=20)
     parser.add_argument(config.ConfigArgs.BATCH_SIZE.to_arg(), type=int, help="Size of batches", default=4)
     parser.add_argument(config.ConfigArgs.TRAIN_STATS.to_arg(), type=str, help="Type of statistics to gather. By default it is set to no-op, which ignores everything.", default="no-op", choices=["no-op", "no-op-sync", "simple", "torch-profiler", "codecarbon", "averaged-energy"])
-    parser.add_argument(config.ConfigArgs.SWITCH_TRANSFORMER_NUM_EXPERTS.to_arg(), type=int, help="When the selected model a switch-base-n, sets the number of experts per sparse layer. It is recommended to only use powers of two.", default=8)
-    parser.add_argument(config.ConfigArgs.QWEN_NUM_EXPERTS.to_arg(), type=int, help="When the selected model is qwen, sets the number of experts per sparse layer. It is recommended to only use powers of two.", default=8)
     # the following arguments are used for codecarbon tracking
     parser.add_argument(config.ConfigArgs.RUN_NUM.to_arg(), type=int, help="The run number used for codecarbon file tracking.", default=0)
     parser.add_argument(config.ConfigArgs.PROJECT_NAME.to_arg(), type=str, help="The name of the project used for codecarbon file tracking.", default="energy-efficiency")
@@ -61,22 +33,17 @@ def get_args() -> argparse.Namespace:
     # The default is set to 1e-6 which is a good default rate for training Qwen models. 1e-7 is a good default rate for Switch-Transformers. Make sure to adjust it for different models
     parser.add_argument(config.ConfigArgs.LEARNING_RATE.to_arg(), type=float, help="The learning rate for training. It is used by the optimizer for both Switch Transformers and Qwen models.", default=1e-6)
     
-    # return parser.parse_args()
-    # Using parse_known_args since deepspeed adds the flag --local-rank, which is currently unhandled
     args, _ = parser.parse_known_args()
     return args
 
 def main():
     args = get_args()
-
     conf = config.Config(args)
-
     model_trainer, model_kwargs = process_conf(conf)
 
-    if model_trainer is None:
-        print("No model trainer, unet3d testing, exiting.")
-    else:
-        model_trainer.train(model_kwargs)
+    model_trainer.train(model_kwargs)
+
+    # This forces garbage collection at process exit. It ensure proper closing of resources.
     del conf
     del model_kwargs
     del model_trainer
