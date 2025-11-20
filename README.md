@@ -65,8 +65,8 @@ TODO: add section for setup and installations
 
 To ensure dependencies are installed, we will use a Conda environment. 
 
-1. **Setting up storage** <br> Your home directory on the McGill server is part of a network file system where users get limited amounts of storage. You can check your storage usage and how much you are allowed to use using the command `quota`. Python packages, pip's cache, Conda's cache and datasets can use quite a bit of storage, so we need to ensure they are stored outside your directory to avoid any issues with disk quotas. Say you have your own directory, stored in `SOME_PATH`, on a server that is not part of the network system (hence not affected by disk quotas). Of course, you should replace `SOME_PATH` with the appropriate path for any command below that uses it. 
-    1. Then we can make a cache directory using `mkdir SOME_PATH/cache`. 
+1. **Setting up storage** <br> Your home directory on the McGill server is part of a network file system where users get limited amounts of storage. You can check your storage usage and how much you are allowed to use using the command `quota`. Python packages, pip's cache, Conda's cache and datasets can use quite a bit of storage, so we need to ensure they are stored outside your directory to avoid any issues with disk quotas. Say you have your own directory, stored in `SOME_PATH`, on a server that is not part of the network file system (hence not affected by disk quotas). Of course, you should replace `SOME_PATH` with the appropriate path for any command below that uses it. The steps to go around the disk quota are as follows:
+    1. We can make a cache directory using `mkdir SOME_PATH/cache`. 
     2. For pip's cache, we can redirect it to that directory using `export PIP_CACHE_DIR=SOME_PATH/cache/pip`. 
     3. For Hugging Face datasets, we can use `export HF_HOME=SOME_PATH/cache/huggingface`. 
     4. For Conda, we will give it its own directory using `mkdir SOME_PATH/conda`. Then we can configure downloads to happens there using `conda config --add pkgs_dirs SOME_PATH/conda/pkgs`, which will update the `~/.condarc` configuration file.
