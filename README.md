@@ -62,6 +62,27 @@ COMP597-starter-code
 
 TODO: add section for setup and installations
 #### environment setup
+
+To ensure dependencies are installed, we will use a Conda environment. 
+
+1. **Setting up storage** <br> Your home directory on the McGill server is part of a network file system where users get limited amounts of storage. You can check your storage usage and how much you are allowed to use using the command `quota`. Python packages, pip's cache, Conda's cache and datasets can use quite a bit of storage, so we need to ensure they are stored outside your directory to avoid any issues with disk quotas. Say you have your own directory, stored in `SOME_PATH`, on a server that is not part of the network system (hence not affected by disk quotas). Of course, you should replace `SOME_PATH` with the appropriate path for any command below that uses it. Then we can make a cache directory using `mkdir SOME_PATH/cache`, For pip's cache, we can redirect it to that directory using `export PIP_CACHE_DIR=SOME_PATH/cache/pip`. For Hugging Face datasets, we can use `export HF_HOME=SOME_PATH/cache/huggingface`. For Conda, we will give it its own directory using `mkdir SOME_PATH/conda`. Then we can configure downloads to happens there using `conda config --add pkgs_dirs SOME_PATH/conda/pkgs`, which will update the `~/.condarc` configuration file.
+2. **Initializing Conda** <br> If you have never used Conda with this user, you need to initialize Conda with `conda init bash`. This modifies the `~/.bashrc` file. Unfortunately, the `~/.bashrc` file is not always executed at login, depending on the server configurations. For that reason, it is recommended to run `. ~/.bashrc` before running any Conda commands. 
+3. **Verifying the installation environment** <br> Run the command `conda --version`. If the version is at least 23.0, skip to the next step. Now we need to verify that mamba is available. To do so, run `conda list conda-libmamba-solver`. If the output contains a version for mamba, skip to the next step. If you haven't skipped to the next step, follow the instructions below.
+    1. Create a base environment using `conda env create --prefix SOME_PATH/conda/envs/COMP597-base --file energy_efficiency/base-environment.yaml`. 
+    2. Activate the newly created environment using `conda activate SOME_PATH/conda/envs/COMP597-base`.
+    3. Create the following environment variable: `export CONDA_BASE_ENV_PATH=SOME_PATH/conda/envs/COMP597-base`.
+    4. You will need to make sure you use the Conda version installed in the environment you just created. For any future `conda` command in the installation process, use `${CONDA_BASE_ENV_PATH}/bin/conda` instead of `conda`.
+4. **Creating the project environment** <br> You can now simply run `conda env create --prefix SOME_PATH/conda/envs/COMP597-project --file energy_efficiency/environment.yaml` to create the environment. You can use your environment by activating it with `conda activate SOME_PATH/conda/envs/COMP597-project`. 
+5. For any future use of the environment, you can create a script, let's name it `env.sh`, which will contain the configuration to set up the environment. You can then execute the script with `. env.sh` to set up activate your environment. If you were using `${CONDA_BASE_ENV_PATH}/bin/conda` so far, do not change, do not use it in the script. The script would look like this:
+```
+#!/bin/bash
+
+. ~/.bashrc
+conda activate SOME_PATH/conda/envs/COMP597-project
+export PIP_CACHE_DIR=SOME_PATH/cache/pip
+export HF_HOME=SOME_PATH/cache/huggingface
+```
+
 #TODO:change the paths from /mnt to absolute paths
 - setting up the environment on the server:
     - `cd /mnt/nobackup`
