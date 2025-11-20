@@ -71,17 +71,18 @@ To ensure dependencies are installed, we will use a Conda environment.
     1. Create a base environment using `conda env create --prefix SOME_PATH/conda/envs/COMP597-base --file energy_efficiency/base-environment.yaml`. 
     2. Activate the newly created environment using `conda activate SOME_PATH/conda/envs/COMP597-base`.
     3. Create the following environment variable: `export CONDA_BASE_ENV_PATH=SOME_PATH/conda/envs/COMP597-base`.
-    4. You will need to make sure you use the Conda version installed in the environment you just created. For any future `conda` command in the installation process, use `${CONDA_BASE_ENV_PATH}/bin/conda` instead of `conda`.
+    4. You will need to make sure you use the Conda version installed in the environment you just created. For any `conda` command in step 4, use `${CONDA_BASE_ENV_PATH}/bin/conda` instead of `conda`.
 4. **Creating the project environment** <br> You can now simply run `conda env create --prefix SOME_PATH/conda/envs/COMP597-project --file energy_efficiency/environment.yaml` to create the environment. You can use your environment by activating it with `conda activate SOME_PATH/conda/envs/COMP597-project`. 
-5. For any future use of the environment, you can create a script, let's name it `env.sh`, which will contain the configuration to set up the environment. You can then execute the script with `. env.sh` to set up activate your environment. If you were using `${CONDA_BASE_ENV_PATH}/bin/conda` so far, do not change, do not use it in the script. The script would look like this:
-```
-#!/bin/bash
-
-. ~/.bashrc
-conda activate SOME_PATH/conda/envs/COMP597-project
-export PIP_CACHE_DIR=SOME_PATH/cache/pip
-export HF_HOME=SOME_PATH/cache/huggingface
-```
+5. **Using the environment** <br> For any future use of the environment, you can create a script, let's name it `env.sh`, which will contain the configuration to set up the environment. You can then execute the script with `. env.sh` to set up activate your environment. The script would look like this:
+    ```
+    #!/bin/bash
+    
+    . ~/.bashrc
+    conda activate SOME_PATH/conda/envs/COMP597-project
+    export PIP_CACHE_DIR=SOME_PATH/cache/pip
+    export HF_HOME=SOME_PATH/cache/huggingface
+    ```
+6. **Quitting** <br> If you want to quit the environment, or reset your sheel to before you activate the environment, simply run `conda deactivate`.
 
 #TODO:change the paths from /mnt to absolute paths
 - setting up the environment on the server:
