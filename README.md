@@ -7,6 +7,24 @@ TODO: course description.
 ### Project Description
 TODO: project description.
 
+#### Models
+
+| Model Name | Type | Architecture | Size |
+| :--- | :---: | :---: | :---: |
+| BERT | NLP | Transformer | 116M |
+| Reformer | NLP | Transformer | 6M |
+| ? | NLP | N/A | N/A |
+| ? | NLP | N/A | N/A |
+| ? | NLP | N/A | N/A |
+| ResNet50 | CV | CNN | 26M |
+| Resnet152 | CV | CNN | 60M |
+| ConvNext Large | CV | CNN | 200M |
+| RegNet Y 128GF | CV | CNN,RNN | 693M |
+| ViT-g/14 | CV | Transformer | 1B |
+| PNA | Graphs | GNN | 4M |
+| DimeNet | Graphs | GNN | 500K |
+| GFlowNet | Graphs | GFlowNet, T. | 600M |
+
 ### Instructions
 TODO: instructions for the project. eg:
 1. Set up your environment using the provided instructions below under [Environment Setup](#environment-setup).
