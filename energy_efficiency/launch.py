@@ -39,6 +39,7 @@ def get_args() -> argparse.Namespace:
 def main():
     args = get_args()
     conf = config.Config(args)
+    print(f"available models: {models.get_available_models()}")
     model_trainer, model_kwargs = process_conf(conf)
 
     model_trainer.train(model_kwargs)
