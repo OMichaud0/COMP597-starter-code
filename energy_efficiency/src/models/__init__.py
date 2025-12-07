@@ -33,8 +33,12 @@ def discover_submodules() -> List[pkgutil.ModuleInfo]:
 def import_submodule_if_contains_model(submodule : pkgutil.ModuleInfo, model_init_function_name : str) -> Optional[ModuleType]:
     if not submodule.ispkg:
         return None
-    module = importlib.import_module(name=f".{submodule.name}", package=__package__)
-    if getattr(module, model_init_function_name, None) is None:
+    try:
+        module = importlib.import_module(name=f".{submodule.name}", package=__package__)
+        if getattr(module, model_init_function_name, None) is None:
+            return None
+    except Exception:
+        print(f"Failed to import {submodule.name}")
         return None
     return module
 
