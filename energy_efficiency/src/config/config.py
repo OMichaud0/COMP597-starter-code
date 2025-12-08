@@ -100,6 +100,19 @@ class Config:
         self.learning_rate : float = _get_arg(args, ConfigArgs.LEARNING_RATE.value, float)
         """The learning rate for training. It is used by the optimizer for all models and varies depending on the model and training setup."""
 
+class CodeCarbonConfig(_BaseConfig):
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._arg_run_num = _Arg(type=int, help="The run number used for codecarbon file tracking.", default=0)
+        self._arg_project_name = _Arg(type=str, help="The name of the project used for codecarbon file tracking.", default="energy-efficiency")
+
+class TrainerStatsConfigs(_BaseConfig):
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.codecarbon = CodeCarbonConfig()
+
 class NewConfig(_BaseConfig):
 
     def __init__(self) -> None:
@@ -116,3 +129,4 @@ class NewConfig(_BaseConfig):
         self._arg_run_num = _Arg(type=int, help="The run number used for codecarbon file tracking.", default=0)
         self._arg_project_name = _Arg(type=str, help="The name of the project used for codecarbon file tracking.", default="energy-efficiency")
         self._arg_learning_rate = _Arg(type=float, help="The learning rate for training. It is used by the optimizer for all models.", default=1e-6)
+        self.trainer_stats = TrainerStatsConfigs()
