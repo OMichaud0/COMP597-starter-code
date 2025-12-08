@@ -19,6 +19,10 @@ class _BaseConfig:
     def __init__(self) -> None:
         pass
 
+    @classmethod
+    def _get_base_class(cls):
+        return cls.__mro__[-2]
+
     def _get_arg_name(self, arg : str) -> str:
         return arg.removeprefix(self._ARG_PREFIX)
 
@@ -46,7 +50,7 @@ class _BaseConfig:
         subconfigs = {}
         for attr in self.__dict__.keys():
             val = getattr(self, attr)
-            if isinstance(val, self.__class__):
+            if isinstance(val, self._get_base_class()):
                 subconfigs[attr] = val
         return subconfigs
 
