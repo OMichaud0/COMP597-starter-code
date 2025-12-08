@@ -64,8 +64,8 @@ class _BaseConfig:
 
     def _get_all(self, prefix : str = "", recursive : bool = True) -> Dict[str, Any]:
         all = {}
-        for arg_name, val in self._get_args().items():
-            all[self._full_arg_name(prefix, arg_name)] = val
+        for arg_name in self._get_args().keys():
+            all[self._full_arg_name(prefix, arg_name)] = getattr(self, arg_name)
         if recursive:
             for name, subconfig in self._get_subconfigs().items():
                 all.update(subconfig._get_all(self._extend_prefix(prefix, name), recursive))
