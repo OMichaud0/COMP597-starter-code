@@ -39,8 +39,8 @@ export COMP597_SLURM_CONFIG_LOG=true
 # See --cpus-per-task in srun --help
 export COMP597_SLURM_CPUS_PER_TASK=4
 # The jobs script that will be provided to srun. 
-# It defaults to the script "scripts/slurm_job.sh" in this repository.
-export COMP597_SLURM_JOB_SCRIPT=${scripts_dir}/slurm_job.sh
+# It defaults to the script "scripts/job.sh" in this repository.
+export COMP597_SLURM_JOB_SCRIPT=${scripts_dir}/job.sh
 # The minimum amount of memory to request. 
 # See --mem in srun --help
 export COMP597_SLURM_MIN_MEM="4GB"
