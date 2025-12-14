@@ -121,7 +121,7 @@ class NewConfig(_BaseConfig):
         self._arg_trainer = _Arg(type=str, help="How to train the model", default="simple", choices=["simple"])
         self._arg_dataset = _Arg(type=str, help="Which dataset to use.", default="allenai/c4",  choices=["allenai/c4"])
         self._arg_dataset_train_files = _Arg(type=str, help="Which files to use for the dataset.", default="/mnt/nobackup/omicha1/c4/downloaded/multilingual/c4-en.tfrecord-00000-of-*.json.gz")
-        self._arg_dataset_files = _Arg(type=str, help="How to split the dataset (ex: train[:100])", default="train[:100]")
+        self._arg_dataset_split = _Arg(type=str, help="How to split the dataset (ex: train[:100])", default="train[:100]")
         self._arg_dataset_load_num_proc = _Arg(type=int, help="Number of threads used to load the dataset.", default=20)
         self._arg_tokenize_num_process = _Arg(type=int, help="Number of threads used to tokenize the dataset.", default=20)
         self._arg_batch_size = _Arg(type=int, help="Size of batches", default=4)

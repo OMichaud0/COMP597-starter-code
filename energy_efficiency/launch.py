@@ -26,14 +26,14 @@ def main():
     conf = get_conf()
     # conf = config.Config(args)
     print(f"available models: {models.get_available_models()}")
-    # model_trainer, model_kwargs = process_conf(conf)
-    print(conf)
-    # model_trainer.train(model_kwargs)
+    model_trainer, model_kwargs = process_conf(conf)
+    # print(conf)
+    model_trainer.train(model_kwargs)
 
     # This forces garbage collection at process exit. It ensure proper closing of resources.
     del conf
-    # del model_kwargs
-    # del model_trainer
+    del model_kwargs
+    del model_trainer
 
 if __name__ == "__main__":
     main()
