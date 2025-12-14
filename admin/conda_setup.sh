@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Load config
+. ${SETUP_SCRIPTS_DIR}/config.sh
+
 mkdir -p ${COMP597_CONDA_DIR}
 setfacl -m g:${COMP597_USERS_GROUP}:r-x ${COMP597_CONDA_DIR}
 setfacl -d -m g:${COMP597_USERS_GROUP}:r-x ${COMP597_CONDA_DIR}

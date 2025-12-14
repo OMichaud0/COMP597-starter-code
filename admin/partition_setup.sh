@@ -2,9 +2,6 @@
 
 export SETUP_SCRIPTS_DIR=$(readlink -f -n $(dirname $0))
 
-# Load config
-. ${SETUP_SCRIPTS_DIR}/config.sh
-
 # Set up admin directory
 
 ${SETUP_SCRIPTS_DIR}/admin_setup.sh
