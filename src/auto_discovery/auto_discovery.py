@@ -39,7 +39,7 @@ def _get_registration_name(module : ModuleType, name_override_attr_name : str) -
 def _register_module(found : Dict[str, object], module : ModuleType, module_attr_name : str, name_override_attr_name : str) -> Dict[str, object]:
     name = _get_registration_name(module, name_override_attr_name)
     found[name] = getattr(module, module_attr_name)
-    logger.debug(f"Registered module {module} with key {name} for attribute {module_attr_name}")
+    logger.debug(f"Registered module {module.__name__} with key {name} for attribute {module_attr_name}")
     return found
 
 def register(package : str, path : List[str], module_attr_name : str, name_override_attr_name : str = "", ignore_attr_name : str = "", strict_ispkg : bool = True) -> Dict[str, object]:
