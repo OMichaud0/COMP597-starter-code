@@ -1,6 +1,7 @@
 from typing import List
 import src.auto_discovery as auto_discovery
 import src.config as config
+import torch.utils.data
 
 _DATA_LOAD_FUNCTION_NAME="load_data"
 _DATA_LOAD_VARIABLE_NAME="data_load_name"
@@ -11,7 +12,7 @@ _DATA_LOADS = auto_discovery.register(
     name_override_attr_name=_DATA_LOAD_VARIABLE_NAME,
 )
 
-def load_data(conf : config.Config):
+def load_data(conf : config.Config) -> torch.utils.data.Dataset:
     global _DATA_LOADS
     load_fn = _DATA_LOADS.get(conf.data, None)
     if load_fn is None:

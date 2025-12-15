@@ -162,17 +162,17 @@ Add any other trainer stats objects as needed and run experiments accordingly.
 
 #### How to run the codebase 
 1. Always activate the environment first using `source local_env.sh` or `. local_env.sh` or the commands provided in the [Environment Setup](#environment-setup) section if it is the first time.
-2. To train a model, use the `launch.py` script with appropriate command-line arguments. For example, to train the GPT2 model with the simple trainer and simple stats, you can run:
-   ```
-   python energy_efficiency/launch.py --model gpt2 --trainer simple --batch_size 4 --learning_rate 1e-6 --dataset_split "train[:100]" --train_stats simple
-   ```
-    > List of command-line arguments can be found in the `get_args` function in `energy_efficiency/launch.py`.
-    > - **Models (`--model`)**: the model to train. Currently supports "gpt2". Add the model you need to implement in the codebase as shown in the [How to setup a new model (GPT2)](#how-to-setup-a-new-model-gpt2) section.
+2. To train a model, use the `launch.py` script with appropriate command-line arguments. For example, to train the GPT2 model with the simple trainer and simple stats, you can run the `scripts/start-gpt2.sh` script, which will run the code on a Slurm node.
+    > List of command-line arguments can be found in the by running `python3 launch.py --help`. Alternatively, you can go through the config classes starting from `src/config/config.py`. Below are some of the high-level options.
+    > - **Models (`--model`)**: the model to train. Currently supports "gpt2". Add the model you need to implement in the codebase.
     > - **Trainers (`--trainer`)**: the training method to use. Currently supports "simple". More trainers can be added as needed. 
-    > - **Training Stats (`--train_stats`)**: the stats collection method to use during training. Currently supports "simple" and "codecarbon". More stats collection methods can be added as needed. TODO (ADD OR REMOVE TO BE DECIDED).
-    > - **Dataset (`--dataset`)**: the dataset to use. Currently supports "allenai/c4". TODO (THIS SHOULD BE CHANGED AND ALSO NEED TO ADD A FUNCTION TO PROCESS DATASET DEPENDING ON MODEL TYPE).
+    > - **Training Stats (`--trainer_stats`)**: the stats collection method to use during training. Currently supports "simple" and "codecarbon". More stats collection methods can be added as needed. TODO (ADD OR REMOVE TO BE DECIDED).
+    > - **Dataset (`--data`)**: the data function to use to load the dataset. Currently, only `dataset` is available, thinly wraps some of the Hugging Face datasets library.
     > - **Batch Size (`--batch_size`)**: the batch size for training.
     > - **Learning Rate (`--learning_rate`)**: the learning rate for training. Adjust it based on the model and training setup as needed.
-    > - **Dataset Split (`--dataset_split`)**: the split of the dataset to use for training. For example, "train[:100]" uses the first 100 samples from the training set.
 
 ---
+
+## Code documentation
+
+This README only provided a high-level overview of the repository and what is can do. Please visit the more detailed [documentation](docs/ToC.md).

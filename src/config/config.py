@@ -16,7 +16,7 @@ class Config(_BaseConfig):
         self._arg_learning_rate = _Arg(type=float, help="The learning rate for training. It is used by the optimizer for all models.", default=1e-6)
         self._arg_model = _Arg(type=str, help="Which model to train.")
         self.model_configs = models_config.ModelConfigs()
-        self._arg_trainer = _Arg(type=str, help="How to train the model", default="simple", choices=["simple"])
+        self._arg_trainer = _Arg(type=str, help="How to train the model", default="simple")
         self.trainer_configs = trainers_config.TrainerConfigs()
         self._arg_trainer_stats = _Arg(type=str, help="Type of statistics to gather. By default it is set to no-op, which ignores everything.", default="no-op")
         self.trainer_stats_configs = trainer_stats_config.TrainerStatsConfigs()
