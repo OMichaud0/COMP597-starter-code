@@ -44,7 +44,7 @@ def init_from_conf(conf : config.Config, **kwargs) -> TrainerStats:
     global _TRAINER_STATS_CONSTRUCTORS
     constructor_fn = _TRAINER_STATS_CONSTRUCTORS.get(conf.trainer_stats, None)
     if constructor_fn is None:
-        raise Exception(f"Unknown trainer stats format: {conf.train_stats}")
+        raise Exception(f"Unknown trainer stats format: {conf.trainer_stats}")
     return constructor_fn(conf, **kwargs)
 
 def get_available_trainer_stats() -> List[str]:
