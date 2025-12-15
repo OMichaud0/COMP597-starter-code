@@ -4,3 +4,4 @@ class ModelsConfig(config_auto_discovery.ConfigAutoDiscovery):
 
     def __init__(self) -> None:
         super().__init__(__package__, list(__path__), "ModelConfig", "config_name")
+
