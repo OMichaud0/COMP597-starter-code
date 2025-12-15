@@ -1,17 +1,17 @@
 import logging
 import os
-import src.config as config
 logger = logging.getLogger(__name__)
 logging.basicConfig(
-    level=logging.getLevelNamesMapping().get(os.environ.get("COMP597_LOG_LEVEL", config.default_logging_config.level), logging.WARNING),
-    format=config.default_logging_config.format,
-    datefmt=config.default_logging_config.datefmt,
-    style=config.default_logging_config.style,
+    level=logging.getLevelNamesMapping().get(os.environ.get("COMP597_LOG_LEVEL", "WARNING"), logging.WARNING),
+    format="[{levelname:.4}] : {asctime} : {module:<24.24} : {message}",
+    datefmt="%Y-%m-%dT%H:%M:%S",
+    style='{',
 )
 
 from typing import Any, Dict, Optional, Tuple
 import argparse
 import gc
+import src.config as config
 import src.data as data
 import src.models as models
 import src.trainer as trainer
