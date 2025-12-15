@@ -2,6 +2,8 @@
 
 The experiments require access to GPUs to train machine learning models. We have obtained access to the SOCS GPU nodes for all students in the course. Jobs can only be run on those nodes using [Slurm](https://slurm.schedmd.com/documentation.html). Find below some information about the setup.
 
+Please node that GPU node and Slurm node are used interchangeably in this file.
+
 ## Accessing the GPU nodes
 
 McGill IT has some documentation about accessing the GPU nodes. You can find it [here](https://docs.sci.mcgill.ca/COMP/slurm/). The account for this course is `energy-efficiency-comp597` is the QOS is `comp597`. 
@@ -17,4 +19,56 @@ McGill IT has some documentation about accessing the GPU nodes. You can find it 
 
 ## Storage
 
+There are tree main disk storage that can be used for the project. The details of each are below. Please read them in details, as it can have an impact on the project.
+
+### Home directory
+
+Your user's home directory is mounted on all the GPU nodes at it habitual location (same as on mimi). It is a good place to store your code and configuration files, as it is easily accessible. However, keep in mind that you are only alloted a small amount of disk space, which can fill up very quickly. You can see your current disk usage and the maximum you are allowed to use using the `quota` command.
+
+### Slurm node local storage
+
+All the Slurm nodes have a local partition dedicated to store data when running jobs. Everything you create in that storage partition is persistent, and can outlive your job. However, McGill IT can wipe the storage at any moment (given there are no jobs running on the Slurm node), so you should be mindful of that if you use that storage space. Typically, they clean up the storage partition at the end of every semester of when it gets full, but there are no guarantees. 
+
+The storage partitions are quite large (up to 7TB), but are local to each Slurm node. It would be a good place to store a Conda environment or a downloaded pre-trained machine learning model, as they can be easily be created again in the event your data gets deleted.
+
+Typically, the path to this storage partition is `/mnt/teaching/slurm`, and should be the same on any Slurm node. The scripts we provide already set it in an environment variable (see `config/default_job_config.sh`)
+
+### COMP597 shared storage
+
+We have obtained a shared storage partition that is mounted on all the Slurm nodes. All students registered in the course should have access to it at the path `/home/slurm/comp597`. See the basic structure below:
+
+```
+/home/slurm/comp597
+├── admin 
+├── conda
+│   └── envs
+│       └── comp597
+├── example
+│   └── c4
+└── students
+    └── ...
+```
+
+The `admin` directory will be used the course administrators, you do not need to worry about it.
+
+The `example` directory contains data used to run the provided GPT2 example.
+
+The course administrators manage and maintain a Conda environment that should contain everything you need for the project. It can used with `conda activate /home/slurm/comp597/conda/envs/comp597`. If any modules are missing, feel free to contact an administrator, and we will install it if it makes sense to add it. 
+
+Finally, the `students` directory is where you can create additional content. To keep it organize, we ask that you create your own directory under `students` and work from there. As storage is limited, please share a directory between teammates as much as possible. Please see the documentation for the `COMP597_JOB_STUDENT_STORAGE_DIR` in `config/default_job_config.sh` to learn how to give access to a directory to your teammates. 
+
+This storage partition is the perfect space to store your dataset as it will be mounted on every Slurm node. 
+
+We ask that you be mindful of your storage usage on this partition. The partition is only 200GB in size, which would accomodate for 10GB per team with some spare room for additional overhead. You can check the disk usage at a given path using `du -h SOME_PATH`. 
+
 ## Running a job
+
+Slurm provide two main tools to run jobs: [`srun`](https://slurm.schedmd.com/srun.html) and [`sbatch`](https://slurm.schedmd.com/sbatch.html). We provide you with scripts that wrap around these tools and manage a lot of the configurations for you, with the option to extend the configurations. Essentially, the difference between `srun` and `sbatch` is that the former will run on your terminal and the process will exit only when the job will have completed, while the latter will schedule the job and exit immediately. 
+
+We provide the script `scripts/srun.sh` that wrap around the `srun` tool. The script uses the default config located in `config/default_srun_config.sh`. For `sbatch`, we provide `scripts/sbatch.sh`, which uses the default config located in `config/default_sbatch_config.sh`. Both wrapper's default configuration file contain the documentation to configure them.
+
+For both wrapper scripts, additional configurations can be added by creating a bash file named `config/slurm_config.sh`, which by setting `COMP597_SLURM_CONFIG` to the path to your config. For more details, see the file `config/default_slurm_config.sh`.
+
+Both wrapper provided will run the `scripts/job.sh` script by default. This script loads the default `config/default_job_config.sh` by default, which also contains the configuration documentation. The wrappers will execute on the computer you are using, whereas this job script will execute on the Slurm node. By default, the `script/job.sh` script is designed to launch the code in this repository using the `scripts/launch.sh` script. This means that `scripts/srun.sh` will run `scripts/launch.sh` which will run `python3 launch.py` on the Slurm node by default. 
+
+All arguments provided to either wrapper are transparently given to the job script, so `srun.sh --model gpt2` will give the arguments `--model gpt2` to the job, which by default would run as `job.sh --model gpt2`, and since `job.sh` gives all its arguments to the command it needs to execute, then it would run `python3 launch.py --model gpt2`. Note that the `job.sh` script evaluates the inputs, so if you do `./job.sh --logging.filename '${COMP597_JOB_STUDENTS_BASE_DIR}'/launch.log`, then `${COMP597_JOB_STUDENTS_BASE_DIR}` will get evaluated on the Slurm node, which would results in running something along the lines of `python3 --logging.filename /home/slurm/comp597/students/launch.log` (if the command executed by `scripts/job.sh` has not been reconfigured).
