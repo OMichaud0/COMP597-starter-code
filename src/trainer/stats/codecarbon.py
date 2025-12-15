@@ -267,7 +267,7 @@ class CodeCarbonStats(base.TrainerStats):
         Log the loss statistics to an external file.
         """
         # losses as dataframe
-        df = pd.DataFrame([x.item() for x in self.losses])
+        df = pd.DataFrame([x.items() for x in self.losses])
         
         # save to file (codecarbonlogs/losses/{project_name}/run_{run_num}_cc_loss_rank_{gpu_id}.csv)
         run_number = f"run_{self.run_num}_"
