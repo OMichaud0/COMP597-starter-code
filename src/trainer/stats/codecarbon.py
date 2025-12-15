@@ -32,9 +32,9 @@ def construct_trainer_stats(conf : config.Config, **kwargs) -> base.TrainerStats
 class SimpleFileOutput(BaseOutput): 
     
     def __init__(self, 
-    output_file_name: str = "codecarbon.csv", 
-    output_dir: str = ".",
-    on_csv_write: str = "append"
+        output_file_name: str = "codecarbon.csv", 
+        output_dir: str = ".",
+        on_csv_write: str = "append"
     ):
         if on_csv_write not in {"append", "update"}:
             raise ValueError(
@@ -149,7 +149,7 @@ class CodeCarbonStats(base.TrainerStats):
 
     """
 
-    def __init__(self, device : torch.device, run_num : int, project_name : str) -> None: 
+    def __init__(self, device : torch.device, run_num : int, project_name : str, output_dir : str) -> None: 
         
         # Track current iteration number in the training loop
         self.iteration = 0
@@ -164,6 +164,8 @@ class CodeCarbonStats(base.TrainerStats):
         # log the losses
         self.losses = []
         self.project_name = project_name
+        self.output_dir = output_dir
+        os.makedirs(self.output_dir, exist_ok=True)
         
         # Normal-mode tracker to track the entire training loop
         self.total_training_tracker = OfflineEmissionsTracker(
@@ -171,7 +173,7 @@ class CodeCarbonStats(base.TrainerStats):
             country_iso_code = "CAN",
             region = "quebec",
             save_to_file = False, 
-            output_handlers = [SimpleFileOutput(output_file_name = f"{run_number}cc_full_rank_{gpu_id}.csv", output_dir=f"codecarbonlogs/{project_name}/")],
+            output_handlers = [SimpleFileOutput(output_file_name = f"{run_number}cc_full_rank_{gpu_id}.csv", output_dir=output_dir)],
             allow_multiple_runs = True,
             log_level = "warning",
             gpu_ids = [gpu_id],
@@ -184,7 +186,7 @@ class CodeCarbonStats(base.TrainerStats):
             country_iso_code = "CAN", 
             region = "quebec", 
             save_to_file = False, 
-            output_handlers = [SimpleFileOutput(output_file_name = f"{run_number}cc_step_rank_{gpu_id}.csv", output_dir=f"codecarbonlogs/{project_name}/")],
+            output_handlers = [SimpleFileOutput(output_file_name = f"{run_number}cc_step_rank_{gpu_id}.csv", output_dir=output_dir)],
             allow_multiple_runs = True, 
             api_call_interval = -1, 
             gpu_ids = [gpu_id],
@@ -198,7 +200,7 @@ class CodeCarbonStats(base.TrainerStats):
             country_iso_code = "CAN", 
             region = "quebec", 
             save_to_file = False, 
-            output_handlers = [SimpleFileOutput(output_file_name = f"{run_number}cc_substep_rank_{gpu_id}.csv", output_dir=f"codecarbonlogs/{project_name}/")],
+            output_handlers = [SimpleFileOutput(output_file_name = f"{run_number}cc_substep_rank_{gpu_id}.csv", output_dir=output_dir)],
             allow_multiple_runs = True, 
             api_call_interval = -1, 
             gpu_ids = [gpu_id],
@@ -267,14 +269,14 @@ class CodeCarbonStats(base.TrainerStats):
         Log the loss statistics to an external file.
         """
         # losses as dataframe
-        df = pd.DataFrame([x.items() for x in self.losses])
+        df = pd.DataFrame([[x["task_name"], x["loss"].item()] for x in self.losses])
         
-        # save to file (codecarbonlogs/losses/{project_name}/run_{run_num}_cc_loss_rank_{gpu_id}.csv)
+        # save to file ({output_dir}/losses/run_{run_num}_cc_loss_rank_{gpu_id}.csv)
         run_number = f"run_{self.run_num}_"
         gpu_id = self.device.index
-        save_file_path = os.path.join(
-            "codecarbonlogs", "losses", self.project_name, f"{run_number}cc_loss_rank_{gpu_id}.csv"
-        )
+        losses_dir = os.path.join(self.output_dir, "losses")
+        os.makedirs(losses_dir, exist_ok=True)
+        save_file_path = os.path.join(losses_dir, f"{run_number}cc_loss_rank_{gpu_id}.csv")
         df.to_csv(save_file_path, index=False)
 
         logger.info(f"CODECARBON LOSS LOGGING: Rank {gpu_id} - Run {self.run_num} - Losses saved to {save_file_path}")
