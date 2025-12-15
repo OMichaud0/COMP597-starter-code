@@ -5,6 +5,7 @@ from src.config.logging_config import LoggingConfig
 from typing import Any, Type, TypeVar
 import argparse
 import enum
+import src.config.models as models_config
 
 # Used for templated typing.
 T = TypeVar("T")
@@ -132,3 +133,4 @@ class Config(_BaseConfig):
         self._arg_learning_rate = _Arg(type=float, help="The learning rate for training. It is used by the optimizer for all models.", default=1e-6)
         self.trainer_stats = TrainerStatsConfigs()
         self.logging = LoggingConfig()
+        self.models = models_config.ModelsConfig()
