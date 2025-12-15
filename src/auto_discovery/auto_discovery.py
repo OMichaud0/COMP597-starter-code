@@ -21,7 +21,7 @@ def _import_submodule_if_contains_attr(submodule : pkgutil.ModuleInfo, module_at
         if getattr(module, module_attr_name, None) is None:
             return None
     except Exception:
-        logger.error(f"Failed to import '{submodule.name}'")
+        logger.exception(f"Failed to import '{submodule.name}'")
         return None
     return module
 
