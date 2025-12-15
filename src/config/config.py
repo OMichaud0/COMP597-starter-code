@@ -1,6 +1,7 @@
 """This file contains the configurations for the project.
 """
 from src.config.base_config import _Arg, _BaseConfig
+from src.config.logging_config import LoggingConfig
 from typing import Any, Type, TypeVar
 import argparse
 import enum
@@ -65,7 +66,7 @@ class ConfigArgs(enum.Enum):
         return f"--{self.value}"
 
 
-class Config:
+class OldConfig:
     """Configuration of the program.
 
     Provides the configuration for the whole training program.
@@ -113,7 +114,7 @@ class TrainerStatsConfigs(_BaseConfig):
         super().__init__()
         self.codecarbon = CodeCarbonConfig()
 
-class NewConfig(_BaseConfig):
+class Config(_BaseConfig):
 
     def __init__(self) -> None:
         super().__init__()
@@ -130,3 +131,4 @@ class NewConfig(_BaseConfig):
         self._arg_project_name = _Arg(type=str, help="The name of the project used for codecarbon file tracking.", default="energy-efficiency")
         self._arg_learning_rate = _Arg(type=float, help="The learning rate for training. It is used by the optimizer for all models.", default=1e-6)
         self.trainer_stats = TrainerStatsConfigs()
+        self.logging = LoggingConfig()

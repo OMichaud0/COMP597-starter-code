@@ -1,5 +1,7 @@
 from typing import Any, Dict, Self
 import argparse
+import logging
+logger = logging.getLogger(__name__)
 
 class _Arg:
 
@@ -12,6 +14,7 @@ class _Arg:
         if prefix is not None and prefix != "":
             arg_name = f"{prefix}.{arg_name}"
         parser.add_argument(f"--{arg_name}", *self.args, **self.kwargs)
+        logger.debug(f"Adding argument {arg_name} to parser.")
 
 class _BaseConfig:
     _ARG_PREFIX="_arg_"
