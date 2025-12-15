@@ -3,6 +3,8 @@ import argparse
 import logging
 logger = logging.getLogger(__name__)
 
+_AUTO_DISCOVERY_IGNORE=True
+
 class _Arg:
 
     def __init__(self, *args, **kwargs) -> None:

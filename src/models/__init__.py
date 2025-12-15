@@ -21,7 +21,6 @@ _MODELS = auto_discovery.register(
     package=__package__,
     path=list(__path__), 
     module_attr_name=_MODEL_INIT_FUNCTION_NAME, 
-    allow_name_override=True, 
     name_override_attr_name=_MODEL_NAME_VARIABLE_NAME
 )
 
