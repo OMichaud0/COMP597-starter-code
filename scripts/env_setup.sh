@@ -46,7 +46,7 @@ conda create --prefix ${ENV_PATH} python=3.14
 conda activate ${ENV_PATH}
 
 # Step 5
-pip install -r energy_efficiency/requirements.txt
+pip install -r requirements.txt
 
 # Step 6 
 cat >local_env.sh <<EOF

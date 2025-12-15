@@ -11,7 +11,7 @@ import torch.utils.data as data
 import transformers
 
 """
-This file contains the code to train a GPT-2 model using Simple trainer (energy_efficiency/src/trainer/simple.py).
+This file contains the code to train a GPT-2 model using Simple trainer (src/trainer/simple.py).
 It is based on the GPT-2 model from HuggingFace Transformers.
 https://huggingface.co/docs/transformers/en/model_doc/gpt2
 """
@@ -93,7 +93,7 @@ def pre_init_gpt2(conf: config.Config, dataset: data.Dataset) -> Tuple[transform
 
 def simple_trainer(conf : config.Config, model : transformers.GPT2LMHeadModel, dataset : data.Dataset, tokenizer : transformers.PreTrainedTokenizer, data_collator : transformers.DataCollatorForLanguageModeling) -> Tuple[trainer.Trainer, Optional[Dict]]:
     """
-    Simple trainer for GPT-2 model. Uses the SimpleTrainer from energy_efficiency/src/trainer/simple.py.
+    Simple trainer for GPT-2 model. Uses the SimpleTrainer from src/trainer/simple.py.
     Args:
         conf (config.Config): The configuration object.
         model (transformers.GPT2LMHeadModel): The GPT-2 model to train.
