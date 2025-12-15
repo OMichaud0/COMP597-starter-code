@@ -4,6 +4,7 @@ Provides classes to accumulate data from trainers and provide basic analysis on
 the data.
 
 """
+from typing import List
 from src.trainer.stats.base import TrainerStats
 from src.trainer.stats.noop import NOOPTrainerStats
 from src.trainer.stats.simple import SimpleTrainerStats
@@ -45,3 +46,7 @@ def init_from_conf(conf : config.Config, **kwargs) -> TrainerStats:
     if constructor_fn is None:
         raise Exception(f"Unknown trainer stats format: {conf.train_stats}")
     return constructor_fn(conf, **kwargs)
+
+def get_available_trainer_stats() -> List[str]:
+    global _TRAINER_STATS_CONSTRUCTORS
+    return [name for name in _TRAINER_STATS_CONSTRUCTORS.keys()]

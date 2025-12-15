@@ -15,6 +15,7 @@ import src.config as config
 import src.data as data
 import src.models as models
 import src.trainer as trainer
+import src.trainer.stats as trainer_stats
 
 def setup_logging(conf : config.Config) -> None:
     logging.basicConfig(
@@ -33,7 +34,7 @@ def process_conf(conf : config.Config) -> Tuple[trainer.Trainer, Optional[Dict[s
 
     return models.model_factory(conf, dataset)
 
-def get_conf() -> config.NewConfig:
+def get_conf() -> config.Config:
     parser = argparse.ArgumentParser()
 
     conf = config.Config()
@@ -46,8 +47,10 @@ def get_conf() -> config.NewConfig:
 def main():
     conf = get_conf()
     setup_logging(conf)
-    logger.debug(f"Configuration: \n {conf}")
+    logger.debug(f"Configuration: \n{conf}")
     logger.info(f"available models: {models.get_available_models()}")
+    logger.info(f"available data load functions: {data.get_available_data_load_functions()}")
+    logger.info(f"available trainer stats classes: {trainer_stats.get_available_trainer_stats()}")
     model_trainer, model_kwargs = process_conf(conf)
     model_trainer.train(model_kwargs)
 
