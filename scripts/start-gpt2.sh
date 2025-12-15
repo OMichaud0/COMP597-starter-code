@@ -32,4 +32,4 @@ ${SCRIPTS_DIR}/srun.sh \
     --trainer_stats codecarbon \
     --trainer_stats_configs.codecarbon.run_num 1 \
     --trainer_stats_configs.codecarbon.project_name test \
-    --trainer_stats_configs.codecarbon.output_dir '${COMP597_JOB_STUDENT_STORAGE_DIR}'
+    --trainer_stats_configs.codecarbon.output_dir '${COMP597_JOB_STUDENT_STORAGE_DIR}/gpt2-example/codecarbonlogs'
