@@ -17,7 +17,7 @@ TODO: project description.
 | OPT | NLP | Transformer | 350M | [HuggingFace Documentation](https://huggingface.co/docs/transformers/en/model_doc/opt) | [TODO]() | [HuggingFace Opt-350M Model Card](https://huggingface.co/facebook/opt-350m) | {i am assuming its the same dataset as BERT cz its BERT adjacent models but also im not sure?} |
 | Bart | NLP | Transformer | 0.1B | [HuggingFace Documentation](https://huggingface.co/docs/transformers/en/model_doc/bart) | [TODO]() | [HuggingFace Bart Base Model Card](https://huggingface.co/facebook/bart-base) | {i am assuming its the same dataset as BERT cz its BERT adjacent models but also im not sure?} |
 | BigBird | NLP | Transformer | ? | [HuggingFace Documentation](https://huggingface.co/docs/transformers/en/model_doc/big_bird) | [TODO]() | [HuggingFace BigBird Roberta Base Model Card](https://huggingface.co/google/bigbird-roberta-base) | {milabench is using BigBirdConfig(attention_type="block_sparse"). i am assuming its the same dataset as BERT cz its BERT adjacent models but also im not sure?} |
-| Abert | NLP | Transformer | 11.8M | [HuggingFace Documentation](https://huggingface.co/docs/transformers/en/model_doc/albert) | [TODO]() | [HuggingFace Albert Base V2 Model Card](https://huggingface.co/albert/albert-base-v2) | {i am assuming its the same dataset as BERT cz its BERT adjacent models but also im not sure?} |
+| Albert | NLP | Transformer | 11.8M | [HuggingFace Documentation](https://huggingface.co/docs/transformers/en/model_doc/albert) | [TODO]() | [HuggingFace Albert Base V2 Model Card](https://huggingface.co/albert/albert-base-v2) | {i am assuming its the same dataset as BERT cz its BERT adjacent models but also im not sure?} |
 | DistilBERT | NLP | Transformer | 67M | [HuggingFace Documentation](https://huggingface.co/docs/transformers/en/model_doc/distilbert) | [TODO]() | [HuggingFace DistilBERT Base Uncased Model Card](https://huggingface.co/docs/transformers/en/model_doc/distilbert) | {i am assuming its the same dataset as BERT cz its BERT adjacent models but also im not sure?} |
 | Longformer | NLP | Transformer | ? | [HuggingFace Documentation](https://huggingface.co/docs/transformers/en/model_doc/longformer) | [TODO]() | [HuggingFace Longformer Base 4096 Model Card](https://huggingface.co/allenai/longformer-base-4096) | {i am assuming its the same dataset as BERT cz its BERT adjacent models but also im not sure?} |
 | Llava | MultiModal (NLP/CV) | Transformer | ? | [HuggingFace Documentation](https://huggingface.co/docs/transformers/en/model_doc/llava) | [HuggingFace The Cauldron Dataset](https://huggingface.co/datasets/HuggingFaceM4/the_cauldron) | [HuggingFace <MODEL> Model Card]() | {i couldnt find a pretrained model small enough? milabench is using the llava-hf/llava-1.5-7b-hf model} |
@@ -111,33 +111,9 @@ COMP597-starter-code
 ---
 
 ## GPT2 example
-### How to setup a new model (GPT2)
-Files to edit/add:
-- Add a new model under the [models](src/models/) directory; `src/models/gpt2/gpt2.py` : contains the GPT2 model definition, optimizer initialization, and trainer setup.
-- Create a bash script to run the experiments (optional); `start-gpt2.sh` : script to launch experiments with GPT2 model.
-- Edit the main [launch](launch.py) file to add the new model; `launch.py` : add the model choice in the argument parser.
-- Edit the [configuration](src/config/config.py) file to add any model-specific configuration;, `src/config/config.py`.
-- Edit the [requirements](requirements.txt) file if new dependencies are needed; `requirements.txt`.
-- Add any additional files as needed for data processing, evaluation, etc.
-- Add [trainer objects](src/trainer/) and/or [trainer stats](src/trainer/stats/) if needed under `src/trainer/`.
-
-Setting up a model - GPT2 example:
-1. Find and setup a tokenizer from Hugging Face transformers. Make adjustements as needed to make it compatible with your dataset.
-2. Find and setup an optimizer. Make sure to set the learning rate from the configuration object.
-3. Setup data processing using the tokenizer and dataset.
-4. Setup the model using data collator, a config from the model and a model (Note: do not take the pretrained one).
-5. Implement the trainer setup function. You can start with a simple trainer as shown in the example. You can implement more complex trainers as needed.
-6. Initialize the model and add it to the [init file](src/models/__init__.py) in the model factory. Make sure to add the model choice in the launch file argument parser and add any needed arguments to the configuration file.
-
-#### How to run experiments with GPT2
-Example commands to run experiments with GPT2 can be found in the [start script](start-gpt2.sh).
-
-To run the model with codecarbon tracking, make necessary modifications to the [codecarbon trainer stats](src/trainer/stats/codecarbon.py) and run the experiments as shown in the script.
-Add any other trainer stats objects as needed and run experiments accordingly.
-
-#### How to run the codebase 
+### How to run the codebase locally
 1. Always activate the environment first using `source local_env.sh` or `. local_env.sh` or the commands provided in the [Environment Setup](#environment-setup) section if it is the first time.
-2. To train a model, use the `launch.py` script with appropriate command-line arguments. For example, to train the GPT2 model with the simple trainer and simple stats, you can run the `scripts/start-gpt2.sh` script, which will run the code on a Slurm node.
+2. To train a model, use the `launch.py` script with appropriate command-line arguments. 
     > List of command-line arguments can be found in the by running `python3 launch.py --help`. Alternatively, you can go through the config classes starting from `src/config/config.py`. Below are some of the high-level options.
     > - **Models (`--model`)**: the model to train. Currently supports "gpt2". Add the model you need to implement in the codebase.
     > - **Trainers (`--trainer`)**: the training method to use. Currently supports "simple". More trainers can be added as needed. 

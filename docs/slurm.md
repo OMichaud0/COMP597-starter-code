@@ -2,7 +2,7 @@
 
 The experiments require access to GPUs to train machine learning models. We have obtained access to the SOCS GPU nodes for all students in the course. Jobs can only be run on those nodes using [Slurm](https://slurm.schedmd.com/documentation.html). Find below some information about the setup.
 
-Please node that GPU node and Slurm node are used interchangeably in this file.
+Please note that GPU node and Slurm node are used interchangeably in this file.
 
 ## Accessing the GPU nodes
 
@@ -19,7 +19,7 @@ McGill IT has some documentation about accessing the GPU nodes. You can find it 
 
 ## Storage
 
-There are tree main disk storage that can be used for the project. The details of each are below. Please read them in details, as it can have an impact on the project.
+There are three main disk storage that can be used for the project. The details of each are below. Please read them in details, as it can have an impact on the project.
 
 ### Home directory
 

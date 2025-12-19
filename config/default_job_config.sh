@@ -22,7 +22,7 @@ default_config=$(readlink -f -n $(dirname ${BASH_SOURCE[0]}))/job_config.sh
 #
 # See "example_config.sh" for an example of how to make a configuration. The 
 # file was made for the SLURM configurations, but it works the same.
-export COMP597_JOB_CONFIG=${COMP597_SLURM_CONFIG:-${default_config}}
+export COMP597_JOB_CONFIG=${COMP597_JOB_CONFIG:-${default_config}}
 
 ################################################################################
 ########################### Possible configurations ############################
