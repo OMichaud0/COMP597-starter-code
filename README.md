@@ -1,6 +1,13 @@
 # COMP597-starter-code
 This repository contains starter code for COMP597: Sustainability in Systems Design - Energy Efficiency analysis using CodeCarbon. 
 
+### Instructions
+
+1. Set up your environment using the provided instructions below under [Environment Setup](#environment-setup).
+2. Familiarize yourself with the CodeCarbon library and its usage. Resources can be found in the [CodeCarbon Resources](#codecarbon-resources) section and in our in-class tutorial (Jan 22).
+3. Implement your model of choice and run experiements to collect data.
+4. Document your process and findings in a report.
+
 ### Models
 
 | Model Name | Type | Architecture | Size | Documentation | Dataset | Pretrained Weights | Notes |
@@ -27,13 +34,6 @@ This repository contains starter code for COMP597: Sustainability in Systems Des
 | DimeNet | Graphs | GNN | 500K | [TODO]() | [PCQM4Mv2](https://pytorch-geometric.readthedocs.io/en/2.7.0/generated/torch_geometric.datasets.PCQM4Mv2.html) | [TODO]() | {[theres a link to the paper where this model is spawned from](https://github.com/mila-iqia/milabench/blob/master/benchmarks/geo_gnn/bench/models.py): [paper](https://arxiv.org/pdf/2003.03123). the dataset used seems to be a [subset](https://github.com/mila-iqia/milabench/blob/master/benchmarks/geo_gnn/pcqm4m_subset.py)} |
 | GFlowNet | Graphs | GFlowNet, T. | 600M | [TODO]() | [TODO]() | [TODO]() | {[this is the paper about the model](https://arxiv.org/pdf/2106.04399) and [this is the github for the model implementation](https://github.com/GFNOrg/gflownet). they talk about a molecule dataset synthetically generated, are we using that as well? i did not put any model info for this one but they get the model from the github linked here and all other info are [here](https://github.com/mila-iqia/milabench/tree/master/benchmarks/recursiongfn)} |
 | ? | ? | ? | ? | [TODO]() | [TODO]() | [TODO]() |
-
-### Instructions
-TODO: instructions for the project. eg:
-1. Set up your environment using the provided instructions below under [Environment Setup](#environment-setup).
-2. Familiarize yourself with the CodeCarbon library and its usage. Resources can be found in the [CodeCarbon Resources](#codecarbon-resources) section.
-3. Implement your language/vision/other model and run experiements to collect data.
-4. Document your process and findings in a report.
 
 ---
 
