@@ -1,11 +1,5 @@
 # COMP597-starter-code
 This repository contains starter code for COMP597: Sustainability in Systems Design - Energy Efficiency analysis using CodeCarbon. 
-TODO: add more description on for course description, project description and instructions on the project.
-## Course Description
-TODO: course description.
-
-## Project Description
-TODO: project description.
 
 ### Models
 
