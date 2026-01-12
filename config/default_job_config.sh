@@ -71,22 +71,10 @@ export COMP597_JOB_CONDA_ENV_PREFIX=${COMP597_JOB_CONDA_ENV_DIR}/${COMP597_JOB_C
 export COMP597_JOB_STUDENTS_BASE_DIR=${COMP597_JOB_STORAGE_PARTITION}/students
 # Path to the student's own storage on the partition. By default, it assumes 
 # the directory is named after the user running this script. 
-#
-# We ask that you override this with an agreed name between the teammates of 
-# your group, and give everyone read-write access to the directory in order to 
-# avoid downloading the same data multiple times. To add a user to a directory, 
-# use `setfacl -m u:USERNAME:rwx DIRNAME` where you replace USERNAME with the 
-# username you want to add and DIRNAME with the path to the directory you want 
-# to give access to. We also recommend that you use 
-# `setfacl -d -m u:USERNAME:rwx DIRNAME` so that the user also gets access to 
-# subdirectories created (note that it will not apply to already created 
-# subdirectories).
 export COMP597_JOB_STUDENT_STORAGE_DIR=${COMP597_JOB_STUDENTS_BASE_DIR}/${USER}
 # Path to the student's own storage on the scratch storage provided on each 
 # node. By default, it assumes the directory is named after the user running 
-# this script. We commend that you do not shared this between students of the 
-# group for concurrency reasons as by default, we will be used for Hugging 
-# Face's caching.
+# this script. 
 export COMP597_JOB_STUDENT_SCRATCH_STORAGE_DIR=${COMP597_JOB_SCRATCH_STORAGE}/${USER}
 # Path used to cache files. By default, it uses the scratch storage on the 
 # local node the job is executing on.

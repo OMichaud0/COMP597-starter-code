@@ -157,8 +157,23 @@ Your arguments should become available with the `--trainer_configs.<trainer_name
 
 ## Data
 
+Additional information will be added as needed during the semester.
+
 ## Trainers
+
+Additional information will be added as needed during the semester.
 
 ## Measurements
 
+Additional information will be added as needed during the semester.
+
 ## Logging
+
+The Python standard library provides a logging library. It can easily be used by adding the following code at the top of any Python file where logging is needed:
+
+```python
+import logging
+logger = logging.getLogger(__name__)
+```
+
+The code provided already provides flags for basic configurations of the logging. Simply use the `--help` flag to print the available flags, which are of the format `--logging.*`. You can refer directly to the official [Python documentation](https://docs.python.org/3/library/logging.html#logging.basicConfig) for additional details about each flag. Each flag corresponds to an argument of the `logging.basicConfig(...)` function.

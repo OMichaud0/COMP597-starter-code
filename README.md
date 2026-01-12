@@ -1,14 +1,11 @@
-# COMP597-starter-code
+# COMP597 Starter Code
 This repository contains starter code for COMP597: Sustainability in Systems Design - Energy Efficiency analysis using CodeCarbon. 
 
-### Instructions
+The starter code provides the basics to train a machine learning model using PyTorch. More precisely, the provided code is a command line tool that is designed to be easily extended with new features. It provides the basics to add models, add command line arguments for configuration purposes, add data collection methods, or modify the training loop. 
 
-1. Set up your environment using the provided instructions below under [Environment Setup](#environment-setup).
-2. Familiarize yourself with the CodeCarbon library and its usage. Resources can be found in the [CodeCarbon Resources](#codecarbon-resources) section and in our in-class tutorial (Jan 22).
-3. Implement your model of choice and run experiements to collect data.
-4. Document your process and findings in a report.
+The repository also provides you with the means to run the code both locally and on Slurm. The expectations are that the Slurm nodes managed by the schools will be used for the final experiments, but if you have a GPU with Cuda and wish to test your code locally, you will find everything you need to do so as well (assuming a Linux host).
 
-### Models
+## Models
 
 | Model Name | Type | Architecture | Size | Documentation | Dataset | Pretrained Weights | Notes |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -72,25 +69,14 @@ COMP597-starter-code
 ```
 
 
-### CodeCarbon Resources
+## CodeCarbon Resources
 - [CodeCarbon Colab Tutorial](https://colab.research.google.com/drive/1eBLk-Fne8YCzuwVLiyLU8w0wNsrfh3xq)
+- [CodeCarbon documentation](https://mlco2.github.io/codecarbon/)
 
 ---
 
-## GPT2 example
-### How to run the codebase locally
-1. Always activate the environment first using `source local_env.sh` or `. local_env.sh` or the commands provided in the [Environment Setup](#environment-setup) section if it is the first time.
-2. To train a model, use the `launch.py` script with appropriate command-line arguments. 
-    > List of command-line arguments can be found in the by running `python3 launch.py --help`. Alternatively, you can go through the config classes starting from `src/config/config.py`. Below are some of the high-level options.
-    > - **Models (`--model`)**: the model to train. Currently supports "gpt2". Add the model you need to implement in the codebase.
-    > - **Trainers (`--trainer`)**: the training method to use. Currently supports "simple". More trainers can be added as needed. 
-    > - **Training Stats (`--trainer_stats`)**: the stats collection method to use during training. Currently supports "simple" and "codecarbon". More stats collection methods can be added as needed. TODO (ADD OR REMOVE TO BE DECIDED).
-    > - **Dataset (`--data`)**: the data function to use to load the dataset. Currently, only `dataset` is available, thinly wraps some of the Hugging Face datasets library.
-    > - **Batch Size (`--batch_size`)**: the batch size for training.
-    > - **Learning Rate (`--learning_rate`)**: the learning rate for training. Adjust it based on the model and training setup as needed.
+## Getting Started
 
----
+As mentionned above, the provided code is a command line tool. The entrypoint is the `launch.py` file, located at the root of this repository. Running the `python3 launch.py --help` (locally) or `srun.sh --help` (Slurm) with print a basic help message listing all the possible flags that can be used to configure the execution of a training loop. 
 
-## Code documentation
-
-This README only provided a high-level overview of the repository and what is can do. Please visit the more detailed [documentation](docs/ToC.md).
+Before digging straight into the code, visit the [documentation](docs/ToC.md). It provides details about the provided code, the required Python environment, how to use Slurm in the context of this project, and how to extend the code provided. 
