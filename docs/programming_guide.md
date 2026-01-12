@@ -4,7 +4,7 @@ This document attemps to provide guidelines to add code in the repository. Make 
 
 ## Auto-discovery
 
-Auto-discovery is the feature that is used so that you can easily add your components to this code without having to change the provided code. Some sections in this documentation will rely on you having read this section, which provides a description of the basic mechanism.
+Auto-discovery is the feature that is used so that you can easily add your components to this code without having to change the provided code.
 
 The idea behind auto-discovery is that we provide you with where to put your code and what it should contain, and if you do so, the provided code in this repository will be able to pick up your components without you modifying the provided code. Typically, auto-discovery will ask the following:
 
@@ -14,7 +14,7 @@ The idea behind auto-discovery is that we provide you with where to put your cod
 | Name | Optional | Your code will have the option to provide a name to register your component. The auto-discovery module will always default to using the name of your directory/file if you do not provide a name. To provide a name, your module will need to have an attribute (a module variable) containing this name. The name of that attribute will depend on the component you are adding. |
 | Attribute | Required | We will ask that your code provides a certain attribute that fulfills some requirements. It might be a function, or a class with a certain name. |
 
-Here is a quick summary of what will be detailed in the other sections:
+Here is a summary of what will be detailed in the sections below:
 
 | Extensions | Location | Name | Attribute |
 | :--- | :--- | :--- | :--- |
@@ -26,9 +26,9 @@ Here is a quick summary of what will be detailed in the other sections:
 | Data load function | Dedicated subdirectory to `src/data/` | `data_load_name` | Function with signature `load_data(conf : src.config.Config) -> torch.utils.data.Dataset` |
 | Trainer stats | Dedicated file in the `src/trainer/` directory | `trainer_stats_name` | Function with signature `contruct_trainer_stats(conf : src.config.Config, **kwargs) -> src.trainer.stats.TrainerStats` |
 
-## Models
+## Adding New Models
 
-To add a model, you will need to create a dedicated directory under `src/models/`. You should give a name that matches with your machine learning model. The directory you created will become a submodule to the models module. We recommend that you use a structure similar to below:
+To add a model, you will need to create a dedicated directory under `src/models/` (give a name that matches your machine learning model). The directory you created will become a submodule of the models module. We recommend that you use a structure similar to below:
 
 ```
 src/models/<model_name>
@@ -36,7 +36,7 @@ src/models/<model_name>
 ├── model.py
 ```
 
-Where `__init__.py` will make sure a function with signature `init_model(conf : src.config.Config, dataset : torch.utils.data.Dataset) -> Tuple[src.trainer.Trainer, Optional[Dict[str, Any]]]` is available and optionally provide a name for your model by setting the variable `model_name` to the desired name. On the other side, `model.py` will contain the basics to initialize your model and create a trainer for that model. Please take a look at the GPT2 example provided at `src/models/gpt2/`. Once this is done, you will be able to use it with `python3 launch.py --model <model_name>`. In simple steps:
+Where `__init__.py` will make sure a function with signature `init_model(conf : src.config.Config, dataset : torch.utils.data.Dataset) -> Tuple[src.trainer.Trainer, Optional[Dict[str, Any]]]` is available and optionally provides a name for your model by setting the variable `model_name` to the desired name. `model.py` contains the basics to initialize your model and creates a trainer for that model. Please take a look at the GPT2 example provided at `src/models/gpt2/`. Once this is done, you will be able to use it with `python3 launch.py --model <model_name>`. In simple steps:
 
 1. Create directory `src/config/models/<model_name>`.
 2. Create file `src/config/models/<model_name>/__init__.py`
