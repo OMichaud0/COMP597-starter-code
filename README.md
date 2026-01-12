@@ -5,6 +5,12 @@ The starter code provides the basics to train a machine learning model using PyT
 
 The repository also provides you with the means to run the code both locally and on Slurm. The expectations are that the Slurm nodes managed by the schools will be used for the final experiments, but if you have a GPU with Cuda and wish to test your code locally, you will find everything you need to do so as well (assuming a Linux host).
 
+## Getting Started
+
+As mentioned above, the provided code is a command line tool. The entry point is the `launch.py` file, located at the root of this repository. Running the `python3 launch.py --help` (locally) or `srun.sh --help` (Slurm) with print a basic help message listing all the possible flags that can be used to configure the execution of a training loop. 
+
+Before digging straight into the code, visit the [documentation](docs/ToC.md). It provides details about the provided code, the required Python environment, how to use Slurm in the context of this project, and how to extend the code provided. 
+
 ## Models
 
 | Model Name | Type | Architecture | Size | Documentation | Dataset | Pretrained Weights | Notes |
@@ -34,40 +40,6 @@ The repository also provides you with the means to run the code both locally and
 
 ---
 
-## Repository Structure
-```
-COMP597-starter-code
-.
-├── README.md 
-├── config                              # Bash configurations to run the code
-├── launch.py                           # Entrypoint to run training experiments
-├── requirements.txt
-├── scripts
-│   └── env_setup.sh                    # Script to setup local conda environment
-└── src
-    ├── auto_discovery 
-    ├── config                          # Configurations objects used to structure program inputs
-    │   ├── config.py                   # Root config class containing all sub-configs
-    │   ├── data                        # Sub-configs to load datasets
-    │   ├── models                      # Sub-configs for models
-    │   ├── trainer_stats               # Sub-configs to configure data measurements
-    │   ├── trainers                    # Sub-configs to configure the trainers
-    │   └── util                        # Utilities to create config objects
-    ├── data                            # Module to load datasets
-    │   ├── dataset                     # Thin wrapper around HF datasets module
-    │   └── ...
-    ├── models                          # Module to create models
-    │   ├── gpt2                        # GPT2 example
-    │   └── ...
-    └── trainer                         # Module providing trainer classes that can train models
-        ├── base.py                     # Abstract class defining the interface for trainer classes
-        ├── simple.py                   # Simple 
-        ├── ...
-        └── stats                       # Module providing measurements classes for trainers
-            ├── base.py                 # Abstract class defining the interface for measurement classes
-            └── ...
-```
-
 
 ## CodeCarbon Resources
 - [CodeCarbon Colab Tutorial](https://colab.research.google.com/drive/1eBLk-Fne8YCzuwVLiyLU8w0wNsrfh3xq)
@@ -75,8 +47,4 @@ COMP597-starter-code
 
 ---
 
-## Getting Started
 
-As mentionned above, the provided code is a command line tool. The entrypoint is the `launch.py` file, located at the root of this repository. Running the `python3 launch.py --help` (locally) or `srun.sh --help` (Slurm) with print a basic help message listing all the possible flags that can be used to configure the execution of a training loop. 
-
-Before digging straight into the code, visit the [documentation](docs/ToC.md). It provides details about the provided code, the required Python environment, how to use Slurm in the context of this project, and how to extend the code provided. 
