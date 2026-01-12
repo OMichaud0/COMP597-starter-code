@@ -1,6 +1,6 @@
 # Code Documentation
 
-Most of this code is documented using doc strings. As much as possible, the [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html) style was followed, but it is possible that not all of it has been updated. Find here a quick overview of each core module in the repository. 
+Most of this code is documented using doc strings. The [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html) style was followed as much as possible. Below, we give an overview of each core module in the repository. 
 
 ## Table of contents
 
