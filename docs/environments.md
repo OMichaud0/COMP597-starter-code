@@ -2,11 +2,11 @@
 
 ## Slurm environment
 
-As mentionned in the Slurm [documentation](slurm.md#comp597-shared-storage), we provided a managed Conda environment that contains the dependencies required for this project. To get an overview of the envrionment's contents, find the `base_requirements.txt` file at the root of repository, as this is the file that was used to generate the complete requirements, which you can find in the file `requirements.txt`.
+As mentioned in the Slurm [documentation](slurm.md#comp597-shared-storage), we provided a managed Conda environment that contains the dependencies required for this project. To get an overview of the envrionment's contents, find the `base_requirements.txt` file at the root of repository, as this is the file that was used to generate the complete requirements, which you can find in the file `requirements.txt`.
 
-## Local environment setup
+## Local environment setup [Optional]
 
-The steps below will walk you through the steps of setting up a local Conda environment if you wish to use one. On the SLURM node, you will be provided with an environment. A setup script `scripts/env_setup.sh` is also provided and will execute all the steps below given as input the path `SOME_PATH` as described in step one below. Of course, you can use a different tool than Conda, simply use the `requirements.txt` file to get the dependencies. 
+The steps below will walk you through the steps of setting up a local Conda environment if you wish to use one. On the SLURM node, you will be provided with an environment. A setup script `scripts/env_setup.sh` is also provided and will execute all the steps below, given as input the path `SOME_PATH` as described in step one below.
 
 1. **Setting up storage** <br> Your home directory on the McGill server is part of a network file system where users get limited amounts of storage. You can check your storage usage and how much you are allowed to use using the command `quota`. Python packages, pip's cache, Conda's cache and datasets can use quite a bit of storage, so we need to ensure they are stored outside your directory to avoid any issues with disk quotas. Say you have your own directory, stored in `SOME_PATH`, on a server that is not part of the network file system (hence not affected by disk quotas). Use `export BASE_STORAGE_PATH=SOME_PATH` where you replace `SOME_PATH` with the actual path. The steps to go around the disk quota are as follows:
     1. We can make a cache directory using `mkdir ${BASE_STORAGE_PATH}/cache`. 
@@ -25,6 +25,6 @@ The steps below will walk you through the steps of setting up a local Conda envi
     export PIP_CACHE_DIR=SOME_PATH/cache/pip
     export HF_HOME=SOME_PATH/cache/huggingface
     ```
-7. **Quitting** <br> If you want to quit the environment, or reset your sheel to before you activate the environment, simply run `conda deactivate`.
+7. **Quitting** <br> If you want to quit the environment, or reset your shell to the state before you activate the environment, run `conda deactivate`.
 
 ---
