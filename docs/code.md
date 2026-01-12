@@ -17,8 +17,7 @@ Most of this code is documented using doc strings. The [numpydoc](https://numpyd
 
 > PATH=`src/config`
 
-This module contains the configuration classes used to configure experiments. A roughly one-to-one mapping is created between the configuration objects and the arguments that can be passed to the program. Some of the configuration objects are wrappers that automatically detect subconfigurations and add them to the configuration structure. Please find details about adding configurations in the [dedicated documentation](code_extensions.md).
-
+This module contains the configuration classes used to configure experiments. A roughly one-to-one mapping is created between the configuration objects and the arguments that can be passed to the program. Some of the configuration objects are wrappers that automatically detect subconfigurations and add them to the configuration structure. 
 ### Automatic sub-configurations
 
 > PATH=`src/config/data` <br>
@@ -26,7 +25,7 @@ This module contains the configuration classes used to configure experiments. A 
 > PATH=`src/config/trainer_stats` <br>
 > PATH=`src/config/trainers`
 
-All the paths above are directories where additional configuration classes can be added and they will be automatically added to the configuration structure at runtime. Please find details about adding configurations in the [dedicated documentation](code_extensions.md#configurations).
+All the paths above are directories where additional configuration classes can be added and they will be automatically added to the configuration structure at runtime. 
 
 ### `config.utils`
 
