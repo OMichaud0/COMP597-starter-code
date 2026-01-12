@@ -62,25 +62,25 @@ Where `__init__.py` will make sure a function with signature `init_model(conf : 
 
 If your model needs specific configurations that should be provided by the config object provided to the init method, see the [relevant documentation](#additional-models-configurations).
 
-## Configurations
+## Adding Configurations
 
-The root configuration object defining the structure is the `Config` class defined in `src/config/config.py`. Find below how to write a configuration object, and how to add it to the configuration structure based on what you are adding.
+The root configuration object defining the structure is the `Config` class defined in `src/config/config.py`. Find below how to write a configuration object, and how to add it to the configuration structure.
 
 ### Defining a configuration object
 
-The configuration objects in this project are designed to integrate with the `argparse` module provided by Python. This is done using two main classes: `_Arg` and `_BaseConfig`, which are defined in `src/config/utils/base_config.py`. 
+The configuration objects in this project are designed to integrate with the `argparse` module provided by Python. This is done using two classes: `_Arg` and `_BaseConfig`, which are defined in `src/config/utils/base_config.py`. 
 
 #### Using `_BaseConfig`
 
-The `_BaseConfig` class provides two principal public methods: `add_arguments` and `parse_arguments`. 
+The `_BaseConfig` class provides two public methods: `add_arguments` and `parse_arguments`. 
 
 The way it works is that any attributes of itself with a name like `_arg_<name>` (starting with `_arg_`) is treated as an argument and will be added to the parser by `add_arguments`, as an argument available with `--<prefix><name>`, where `<prefix>` is computed at runtime to allow for a structure and `<name>` is the desired argument. 
 
-Then, `parse_arguments` with take the value of the flag `--<prefix><name>` and make the value available in the config by creating an attribute named `<name>` set to the flag's value.
+Then, `parse_arguments` takes the value of the flag `--<prefix><name>` and makes the value available in the config by creating an attribute named `<name>` set to the flag's value.
 
 #### Using `_Arg`
 
-The `_Arg` class is very simple: it simply encapsulates the inputs to the [`add_argument`](https://docs.python.org/3/library/argparse.html#argparse.ArgumentParser.add_argument) method of an [`ArgumentParser`](https://docs.python.org/3/library/argparse.html#argparse.ArgumentParser) object from the `argparse` Python module, with the exception of the argument's name. You can easily extend the class to make more complex arguments. 
+The `_Arg` class simply encapsulates the inputs to the [`add_argument`](https://docs.python.org/3/library/argparse.html#argparse.ArgumentParser.add_argument) method of an [`ArgumentParser`](https://docs.python.org/3/library/argparse.html#argparse.ArgumentParser) object from the `argparse` Python module, with the exception of the argument's name. You can extend the class to make more complex arguments. 
 
 #### Example usage
 
