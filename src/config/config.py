@@ -1,132 +1,25 @@
 """This file contains the configurations for the project.
 """
-from src.config.base_config import _Arg, _BaseConfig
-from typing import Any, Type, TypeVar
-import argparse
-import enum
+from src.config.util.base_config import _Arg, _BaseConfig
+from src.config.logging_config import LoggingConfig
+import src.config.models as models_config
+import src.config.trainers as trainers_config
+import src.config.trainer_stats as trainer_stats_config
+import src.config.data as data_config
 
-# Used for templated typing.
-T = TypeVar("T")
-
-def _missing_arg(name : str) -> None:
-    """Raise an exception for a missing argument.
-    """
-    raise Exception(f"missing argument {name}")
-
-def _wrong_arg_type(name : str, expected : Type[Any], actual : Type[Any]) -> None:
-    """Raise an exception for an argument that has the wrong type.
-    """
-    raise Exception(f"argument {name} expected to have type {expected} but got {actual}")
-
-def _get_arg(args : argparse.Namespace, name : str, arg_type : Type[T]) -> T:
-    """Extract an argument from a namespace.
-
-    This function verifies that the requested argument is present and has the correct type. If the checks pass, the argument's value is returned.
-
-    Parameters
-    ----------
-    args
-        Namespace containing the programs arguments.
-    name
-        Name of the argument to extract from the namespace.
-    arg_type
-        Expected type of the argument.
-
-    Returns
-    -------
-    T
-        The value of requested argument.
-
-    """
-    if not hasattr(args, name):
-        _missing_arg(name)
-    elif not isinstance(getattr(args, name), arg_type):
-        _wrong_arg_type("model", str, type(args.model))
-    return getattr(args, name)
-
-@enum.unique
-class ConfigArgs(enum.Enum):
-    """List of arguments that can be provided to the process.
-    """
-    MODEL = "model"
-    TRAINER = "trainer"
-    DATASET = "dataset"
-    DATASET_TRAIN_FILES = "dataset_train_files"
-    DATASET_SPLIT = "dataset_split"
-    DATASET_LOAD_NUM_PROC = "dataset_load_num_proc"
-    TOKENIZE_NUM_PROCESS = "tokenize_num_process"
-    BATCH_SIZE = "batch_size"
-    TRAIN_STATS = "train_stats"
-    RUN_NUM = "run_num"  # number of the run used for codecarbon file tracking
-    PROJECT_NAME = "project_name"  # name of the project used for codecarbon file tracking
-    LEARNING_RATE = "learning_rate"  # learning rate for training
-
-    def to_arg(self) -> str:
-        return f"--{self.value}"
-
-
-class Config:
-    """Configuration of the program.
-
-    Provides the configuration for the whole training program.
-
-    """
-
-    def __init__(self, args : argparse.Namespace) -> None:
-        self.model : str = _get_arg(args, ConfigArgs.MODEL.value, str)
-        """The name of the model to generate and train."""
-        self.trainer : str = _get_arg(args, ConfigArgs.TRAINER.value, str)
-        """The name of the training technique."""
-        self.dataset : str = _get_arg(args, ConfigArgs.DATASET.value, str)
-        """The name of the dataset to use for training."""
-        self.dataset_train_files : str = _get_arg(args, ConfigArgs.DATASET_TRAIN_FILES.value, str)
-        """Which files of the dataset to use for training."""
-        self.dataset_split : str = _get_arg(args, ConfigArgs.DATASET_SPLIT.value, str)
-        """How to split the dataset (ex: train[:100])."""
-        self.dataset_load_num_proc : int = _get_arg(args, ConfigArgs.DATASET_LOAD_NUM_PROC.value, int)
-        """Number of threads used to load the dataset."""
-        self.tokenize_num_process : int = _get_arg(args, ConfigArgs.TOKENIZE_NUM_PROCESS.value, int)
-        """Number of threads used to tokenize the dataset."""
-        self.batch_size : int = _get_arg(args, ConfigArgs.BATCH_SIZE.value, int)
-        """Size of batches."""
-        self.train_stats : str = _get_arg(args, ConfigArgs.TRAIN_STATS.value, str)
-        """Type of statistics to gather. By default it is set to no-op, which 
-        ignores everything."""
-
-        self.run_num : int = _get_arg(args, ConfigArgs.RUN_NUM.value, int)
-        """The run number used for codecarbon file tracking."""
-        self.project_name : str = _get_arg(args, ConfigArgs.PROJECT_NAME.value, str)
-        """The name of the project used for codecarbon file tracking."""
-        self.learning_rate : float = _get_arg(args, ConfigArgs.LEARNING_RATE.value, float)
-        """The learning rate for training. It is used by the optimizer for all models and varies depending on the model and training setup."""
-
-class CodeCarbonConfig(_BaseConfig):
+class Config(_BaseConfig):
 
     def __init__(self) -> None:
         super().__init__()
-        self._arg_run_num = _Arg(type=int, help="The run number used for codecarbon file tracking.", default=0)
-        self._arg_project_name = _Arg(type=str, help="The name of the project used for codecarbon file tracking.", default="energy-efficiency")
-
-class TrainerStatsConfigs(_BaseConfig):
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.codecarbon = CodeCarbonConfig()
-
-class NewConfig(_BaseConfig):
-
-    def __init__(self) -> None:
-        super().__init__()
-        self._arg_model = _Arg(type=str, help="Which model to train.")
-        self._arg_trainer = _Arg(type=str, help="How to train the model", default="simple", choices=["simple"])
-        self._arg_dataset = _Arg(type=str, help="Which dataset to use.", default="allenai/c4",  choices=["allenai/c4"])
-        self._arg_dataset_train_files = _Arg(type=str, help="Which files to use for the dataset.", default="/mnt/nobackup/omicha1/c4/downloaded/multilingual/c4-en.tfrecord-00000-of-*.json.gz")
-        self._arg_dataset_split = _Arg(type=str, help="How to split the dataset (ex: train[:100])", default="train[:100]")
-        self._arg_dataset_load_num_proc = _Arg(type=int, help="Number of threads used to load the dataset.", default=20)
-        self._arg_tokenize_num_process = _Arg(type=int, help="Number of threads used to tokenize the dataset.", default=20)
+        self.logging = LoggingConfig()
         self._arg_batch_size = _Arg(type=int, help="Size of batches", default=4)
-        self._arg_train_stats = _Arg(type=str, help="Type of statistics to gather. By default it is set to no-op, which ignores everything.", default="no-op", choices=["no-op", "no-op-sync", "simple", "torch-profiler", "codecarbon", "averaged-energy"])
-        self._arg_run_num = _Arg(type=int, help="The run number used for codecarbon file tracking.", default=0)
-        self._arg_project_name = _Arg(type=str, help="The name of the project used for codecarbon file tracking.", default="energy-efficiency")
         self._arg_learning_rate = _Arg(type=float, help="The learning rate for training. It is used by the optimizer for all models.", default=1e-6)
-        self.trainer_stats = TrainerStatsConfigs()
+        self._arg_model = _Arg(type=str, help="Which model to train.")
+        self.model_configs = models_config.ModelConfigs()
+        self._arg_trainer = _Arg(type=str, help="How to train the model", default="simple")
+        self.trainer_configs = trainers_config.TrainerConfigs()
+        self._arg_trainer_stats = _Arg(type=str, help="Type of statistics to gather. By default it is set to no-op, which ignores everything.", default="no-op")
+        self.trainer_stats_configs = trainer_stats_config.TrainerStatsConfigs()
+        self._arg_data = _Arg(type=str, help="Dataset module to use to load data.", default="dataset")
+        self.data_configs = data_config.DataConfigs()
+

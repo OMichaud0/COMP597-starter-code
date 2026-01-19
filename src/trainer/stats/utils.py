@@ -1,6 +1,11 @@
+import logging
 import pynvml
 import time
 import torch
+
+logger = logging.getLogger(__name__)
+
+_TRAINER_STATS_AUTO_DISCOVERY_IGNORE=True
 
 class RunningAverage:
     """Implements a running average.
@@ -196,9 +201,8 @@ class RunningEnergy:
     def __init__(self, gpu_index : int) -> None:
         self.stat = RunningStat()
         self.start_energy = 0
-        # added for unet3d (greta)
         if gpu_index is None:
-            print("[GRETA WARNING] GPU index not provided, defaulting to 0.")
+            logger.warning("GPU index not provided, defaulting to 0.")
             gpu_index = 0
         self.gpu_index = gpu_index
         self.handle = pynvml.nvmlDeviceGetHandleByIndex(self.gpu_index)
