@@ -9,7 +9,7 @@ transformers==4.57.1
 tqdm==4.67.1
 pandas==2.3.3
 
-# Specific to V-Jepa2
+# Specific to V-Jepa2 taken from https://github.com/facebookresearch/jepa/blob/3081b0ad7b9651373ccef40c1d46b62f46cb7146/requirements.txt
 opencv-python==4.13.0.92
 webdataset==1.0.2
 timm==1.0.24

@@ -1,5 +1,8 @@
 # This environment was made for python 3.10
 
+# NOTE: The installation need an extra index. Use the command below:
+# pip install -r ../base-requirements-gflownet.txt --find-links https://data.pyg.org/whl/torch-2.1.2+cu121.html
+
 # Core dependencies
 # torch==2.9.1
 # torchvision==0.24.1
