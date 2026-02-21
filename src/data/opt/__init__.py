@@ -17,14 +17,14 @@ def register_generator(fn):
 
 
 class SyntheticData(Dataset):
-    def __init__(self, generators_dict, n: int, repeat: int):
+    def __init__(self, generator_fn, info, n: int, repeat: int):
         self.n = max(1, int(n))
         self.repeat = max(1, int(repeat))
-        # Materialize samples up front so worker processes only pickle tensor data.
-        self.data = [{name: gen() for name, gen in generators_dict.items()} for _ in range(self.n)]
+        self.generator_fn = generator_fn
+        self.info = info
 
     def __getitem__(self, i):
-        return self.data[i % self.n]
+        return self.generator_fn(self.info)
 
     def __len__(self):
         return self.n * self.repeat
@@ -37,44 +37,20 @@ class _SyntheticInfo:
 
 
 def vocabgen(info):
-    def gen():
-        return torch.randint(0, info.config.vocab_size, (info.train_length,), dtype=torch.long)
-
-    return gen
+    return torch.randint(0, info.config.vocab_size, (info.train_length,), dtype=torch.long)
 
 
 def maskgen(info):
-    def gen():
-        return torch.ones((info.train_length,), dtype=torch.long)
-
-    return gen
-
-
-def paired_vocabgen(info):
-    cache = {"tokens": None}
-
-    def igen():
-        tokens = torch.randint(0, info.config.vocab_size, (info.train_length,), dtype=torch.long)
-        cache["tokens"] = tokens
-        return tokens
-
-    def lgen():
-        tokens = cache["tokens"]
-        if tokens is None:
-            tokens = torch.randint(0, info.config.vocab_size, (info.train_length,), dtype=torch.long)
-            cache["tokens"] = tokens
-        return tokens.clone()
-
-    return igen, lgen
+    return torch.ones((info.train_length,), dtype=torch.long)
 
 
 @register_generator
 def gen_AutoModelForCausalLM(info):
-    input_gen, label_gen = paired_vocabgen(info)
+    input_ids = vocabgen(info)
     return {
-        "input_ids": input_gen,
+        "input_ids": input_ids,
         "attention_mask": maskgen(info),
-        "labels": label_gen,
+        "labels": input_ids.clone(),
     }
 
 
@@ -121,7 +97,7 @@ def load_data(conf):
 
     info = _SyntheticInfo(vocab_size=vocab_size, train_length=seq_len)
     generator_fn = generators.get(generator_name, gen_AutoModelForCausalLM)
-    dataset = SyntheticData(generator_fn(info), n=n, repeat=repeat)
+    dataset = SyntheticData(generator_fn, info=info, n=n, repeat=repeat)
 
     return DataLoader(
         dataset,
