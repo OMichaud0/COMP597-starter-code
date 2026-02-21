@@ -20,11 +20,8 @@ class SyntheticData(Dataset):
     def __init__(self, generators_dict, n: int, repeat: int):
         self.n = max(1, int(n))
         self.repeat = max(1, int(repeat))
-        self.generators = generators_dict
-        self.data = [self.gen() for _ in range(self.n)]
-
-    def gen(self):
-        return {name: gen() for name, gen in self.generators.items()}
+        # Materialize samples up front so worker processes only pickle tensor data.
+        self.data = [{name: gen() for name, gen in generators_dict.items()} for _ in range(self.n)]
 
     def __getitem__(self, i):
         return self.data[i % self.n]
