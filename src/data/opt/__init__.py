@@ -33,11 +33,11 @@ class SyntheticData(Dataset):
 class _SyntheticInfo:
     def __init__(self, vocab_size: int, train_length: int):
         self.train_length = train_length
-        self.config = type("Config", (), {"vocab_size": vocab_size})()
+        self.vocab_size = vocab_size
 
 
 def vocabgen(info):
-    return torch.randint(0, info.config.vocab_size, (info.train_length,), dtype=torch.long)
+    return torch.randint(0, info.vocab_size, (info.train_length,), dtype=torch.long)
 
 
 def maskgen(info):
