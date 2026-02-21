@@ -1,35 +1,94 @@
+import math
+
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader, Dataset
 
 # This name is picked up by the auto-discovery system in src/data/__init__.py.
 data_load_name = "opt"
 
 BYTES_PER_TOKEN = 24  # input_ids + attention_mask + labels (int64 each => 3*8)
 
+generators = {}
 
-class SyntheticCausalLMDataset(Dataset):
-    def __init__(self, vocab_size: int, seq_len: int, target_gb: float, max_samples: int = 0):
-        self.vocab_size = vocab_size
-        self.seq_len = seq_len
 
-        target_bytes = int(target_gb * 1024**3)
-        total_tokens = max(1, target_bytes // BYTES_PER_TOKEN)
-        self.num_samples = max(1, total_tokens // seq_len)
-        if max_samples is not None and max_samples > 0:
-            self.num_samples = min(self.num_samples, max_samples)
+def register_generator(fn):
+    generators[fn.__name__.lstrip("gen_")] = fn
+    return fn
 
-        self.data = torch.randint(
-            0, vocab_size, (self.num_samples, seq_len), dtype=torch.long
-        )
+
+class SyntheticData(Dataset):
+    def __init__(self, generators_dict, n: int, repeat: int):
+        self.n = max(1, int(n))
+        self.repeat = max(1, int(repeat))
+        self.generators = generators_dict
+        self.data = [self.gen() for _ in range(self.n)]
+
+    def gen(self):
+        return {name: gen() for name, gen in self.generators.items()}
+
+    def __getitem__(self, i):
+        return self.data[i % self.n]
 
     def __len__(self):
-        return self.num_samples
+        return self.n * self.repeat
 
-    def __getitem__(self, idx):
-        input_ids = self.data[idx]
-        attention_mask = torch.ones_like(input_ids)
-        labels = input_ids.clone()
-        return {"input_ids": input_ids, "attention_mask": attention_mask, "labels": labels}
+
+class _SyntheticInfo:
+    def __init__(self, vocab_size: int, train_length: int):
+        self.train_length = train_length
+        self.config = type("Config", (), {"vocab_size": vocab_size})()
+
+
+def vocabgen(info):
+    def gen():
+        return torch.randint(0, info.config.vocab_size, (info.train_length,), dtype=torch.long)
+
+    return gen
+
+
+def maskgen(info):
+    def gen():
+        return torch.ones((info.train_length,), dtype=torch.long)
+
+    return gen
+
+
+def paired_vocabgen(info):
+    cache = {"tokens": None}
+
+    def igen():
+        tokens = torch.randint(0, info.config.vocab_size, (info.train_length,), dtype=torch.long)
+        cache["tokens"] = tokens
+        return tokens
+
+    def lgen():
+        tokens = cache["tokens"]
+        if tokens is None:
+            tokens = torch.randint(0, info.config.vocab_size, (info.train_length,), dtype=torch.long)
+            cache["tokens"] = tokens
+        return tokens.clone()
+
+    return igen, lgen
+
+
+@register_generator
+def gen_AutoModelForCausalLM(info):
+    input_gen, label_gen = paired_vocabgen(info)
+    return {
+        "input_ids": input_gen,
+        "attention_mask": maskgen(info),
+        "labels": label_gen,
+    }
+
+
+@register_generator
+def gen_AutoModelForSeq2SeqLM(info):
+    return gen_AutoModelForCausalLM(info)
+
+
+@register_generator
+def gen_AutoModelForMaskedLM(info):
+    return gen_AutoModelForCausalLM(info)
 
 
 def load_data(conf):
@@ -41,14 +100,32 @@ def load_data(conf):
             return getattr(opt_cfg, name)
         return getattr(conf, name, default)
 
-    vocab_size = pick("vocab_size", 50272)     # OPT default vocab size
+    vocab_size = pick("vocab_size", 50272)  # OPT default vocab size
     seq_len = pick("seq_len", 1024)
     dataset_gb = pick("dataset_gb", 2.5)
     batch_size = pick("batch_size", 1)
     num_workers = pick("num_workers", 2)
     max_samples = pick("max_samples", 0)
+    cache_samples = pick("cache_samples", 0)
+    generator_name = pick("generator_name", "AutoModelForCausalLM")
 
-    dataset = SyntheticCausalLMDataset(vocab_size, seq_len, dataset_gb, max_samples=max_samples)
+    target_bytes = int(dataset_gb * 1024**3)
+    total_tokens = max(1, target_bytes // BYTES_PER_TOKEN)
+    total_samples = max(1, total_tokens // seq_len)
+    if max_samples is not None and max_samples > 0:
+        total_samples = min(total_samples, max_samples)
+
+    if cache_samples is not None and cache_samples > 0:
+        n = min(total_samples, cache_samples)
+        repeat = max(1, math.ceil(total_samples / n))
+    else:
+        n = total_samples
+        repeat = 1
+
+    info = _SyntheticInfo(vocab_size=vocab_size, train_length=seq_len)
+    generator_fn = generators.get(generator_name, gen_AutoModelForCausalLM)
+    dataset = SyntheticData(generator_fn(info), n=n, repeat=repeat)
+
     return DataLoader(
         dataset,
         batch_size=batch_size,
