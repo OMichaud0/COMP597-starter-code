@@ -55,6 +55,9 @@ class ResourceTrainerStats(base.TrainerStats):
         self.gpu_index = int(getattr(cfg, "gpu_index", -1))
         self.output_dir = str(getattr(cfg, "output_dir", "."))
         self.output_file_prefix = str(getattr(cfg, "output_file_prefix", "resource_stats"))
+        self.plot_metrics = bool(int(getattr(cfg, "plot_metrics", 1)))
+        self.plot_x_axis = str(getattr(cfg, "plot_x_axis", "elapsed_sec"))
+        self.plot_max_metrics = int(getattr(cfg, "plot_max_metrics", 0))
         self.step_csv_path = os.path.join(self.output_dir, f"{self.output_file_prefix}_steps.csv")
         self.summary_json_path = os.path.join(self.output_dir, f"{self.output_file_prefix}_summary.json")
 
@@ -320,6 +323,19 @@ class ResourceTrainerStats(base.TrainerStats):
         with open(self.summary_json_path, "w", encoding="utf-8") as fp:
             json.dump(summary, fp, indent=2)
         print(f"resource summary saved to {self.summary_json_path}")
+        if self.plot_metrics:
+            plot_paths = utils.generate_metric_plots_from_csv(
+                csv_path=self.step_csv_path,
+                output_dir=self.output_dir,
+                output_file_prefix=self.output_file_prefix,
+                x_axis=self.plot_x_axis,
+                exclude_metrics=["step"],
+                max_metrics=self.plot_max_metrics,
+            )
+            if plot_paths:
+                print(f"resource plots saved to {os.path.dirname(plot_paths[0])}")
+            else:
+                print("resource plots were not generated (insufficient data or plotting backend unavailable)")
 
     def _print_avg(self, name: str, stat: utils.RunningStat, unit: str) -> None:
         avg = stat.get_average()
