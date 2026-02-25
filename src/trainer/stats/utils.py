@@ -1,7 +1,16 @@
 import logging
+import csv
+import os
 import pynvml
 import time
+from typing import Dict, Iterable, List, Optional
 import torch
+
+try:
+    from PIL import Image, ImageDraw
+except Exception:  # pragma: no cover - environment dependent
+    Image = None
+    ImageDraw = None
 
 logger = logging.getLogger(__name__)
 
@@ -254,4 +263,154 @@ class RunningEnergy:
 
         """
         self.stat.log_analysis()
+
+
+def _to_float_or_none(value: object) -> Optional[float]:
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    value = str(value).strip()
+    if value == "":
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        return None
+
+
+def read_numeric_csv_rows(path: str) -> List[Dict[str, Optional[float]]]:
+    rows: List[Dict[str, Optional[float]]] = []
+    if not os.path.exists(path):
+        return rows
+
+    with open(path, "r", encoding="utf-8") as fp:
+        reader = csv.DictReader(fp)
+        for row in reader:
+            rows.append({k: _to_float_or_none(v) for k, v in row.items()})
+    return rows
+
+
+def _draw_simple_line_plot(
+    x_values: Iterable[float],
+    y_values: Iterable[float],
+    title: str,
+    x_label: str,
+    y_label: str,
+    output_path: str,
+) -> bool:
+    if Image is None or ImageDraw is None:
+        logger.warning("Pillow is not available; cannot render metric plots.")
+        return False
+
+    xs = list(x_values)
+    ys = list(y_values)
+    if len(xs) < 2 or len(ys) < 2:
+        return False
+
+    width = 1200
+    height = 700
+    left = 90
+    right = 30
+    top = 55
+    bottom = 80
+    plot_w = width - left - right
+    plot_h = height - top - bottom
+
+    x_min = min(xs)
+    x_max = max(xs)
+    y_min = min(ys)
+    y_max = max(ys)
+
+    if x_max == x_min:
+        x_max = x_min + 1.0
+    if y_max == y_min:
+        y_max = y_min + 1.0
+
+    def sx(xv: float) -> int:
+        return int(left + ((xv - x_min) / (x_max - x_min)) * plot_w)
+
+    def sy(yv: float) -> int:
+        return int(top + (1.0 - ((yv - y_min) / (y_max - y_min))) * plot_h)
+
+    img = Image.new("RGB", (width, height), (255, 255, 255))
+    draw = ImageDraw.Draw(img)
+
+    # Axes
+    draw.line((left, top, left, top + plot_h), fill=(0, 0, 0), width=2)
+    draw.line((left, top + plot_h, left + plot_w, top + plot_h), fill=(0, 0, 0), width=2)
+
+    # Line plot
+    points = [(sx(xv), sy(yv)) for xv, yv in zip(xs, ys)]
+    draw.line(points, fill=(35, 99, 255), width=3)
+
+    # Labels and range annotations
+    draw.text((left, 10), title, fill=(0, 0, 0))
+    draw.text((width // 2 - 80, height - 28), x_label, fill=(0, 0, 0))
+    draw.text((6, top + plot_h // 2), y_label, fill=(0, 0, 0))
+    draw.text((left, height - 50), f"min={x_min:.3f}, max={x_max:.3f}", fill=(0, 0, 0))
+    draw.text((left + 250, height - 50), f"y-min={y_min:.3f}, y-max={y_max:.3f}", fill=(0, 0, 0))
+
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    img.save(output_path)
+    return True
+
+
+def generate_metric_plots_from_csv(
+    csv_path: str,
+    output_dir: str,
+    output_file_prefix: str,
+    x_axis: str = "elapsed_sec",
+    exclude_metrics: Optional[Iterable[str]] = None,
+    max_metrics: int = 0,
+) -> List[str]:
+    rows = read_numeric_csv_rows(csv_path)
+    if not rows:
+        return []
+
+    exclude = set(exclude_metrics or [])
+    exclude.update({x_axis})
+
+    series: Dict[str, List[float]] = {}
+    series_x: Dict[str, List[float]] = {}
+    for idx, row in enumerate(rows):
+        x = row.get(x_axis, None)
+        if x is None:
+            x = float(idx + 1)
+        x = float(x)
+
+        for key, value in row.items():
+            if key in exclude or value is None:
+                continue
+            series.setdefault(key, []).append(float(value))
+            series_x.setdefault(key, []).append(x)
+
+    if not series:
+        return []
+
+    plot_dir = os.path.join(output_dir, f"{output_file_prefix}_plots")
+    os.makedirs(plot_dir, exist_ok=True)
+
+    metrics = sorted(series.keys())
+    if max_metrics is not None and max_metrics > 0:
+        metrics = metrics[:max_metrics]
+
+    written: List[str] = []
+    for metric in metrics:
+        x_values = series_x[metric]
+        y_values = series[metric]
+        if len(y_values) < 2:
+            continue
+        output_path = os.path.join(plot_dir, f"{metric}_vs_{x_axis}.png")
+        ok = _draw_simple_line_plot(
+            x_values=x_values,
+            y_values=y_values,
+            title=f"{metric} vs {x_axis}",
+            x_label=x_axis,
+            y_label=metric,
+            output_path=output_path,
+        )
+        if ok:
+            written.append(output_path)
+    return written
 

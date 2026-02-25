@@ -2,6 +2,7 @@ import logging
 import csv
 import json
 import os
+import time
 import src.config as config
 import src.trainer.stats.base as base
 import src.trainer.stats.utils as utils
@@ -68,23 +69,31 @@ class SimpleTrainerStats(base.TrainerStats):
         simple_cfg = conf.trainer_stats_configs.simple
         self.output_dir = str(getattr(simple_cfg, "output_dir", "."))
         self.output_file_prefix = str(getattr(simple_cfg, "output_file_prefix", "simple_stats"))
+        self.plot_metrics = bool(int(getattr(simple_cfg, "plot_metrics", 1)))
+        self.plot_x_axis = str(getattr(simple_cfg, "plot_x_axis", "elapsed_sec"))
+        self.plot_max_metrics = int(getattr(simple_cfg, "plot_max_metrics", 0))
         self.step_csv_path = os.path.join(self.output_dir, f"{self.output_file_prefix}_steps.csv")
         self.summary_json_path = os.path.join(self.output_dir, f"{self.output_file_prefix}_summary.json")
         self._csv_file = None
         self._csv_writer = None
+        self._train_start_ts = None
+        self._last_loss = None
 
     def start_train(self) -> None:
         os.makedirs(self.output_dir, exist_ok=True)
+        self._train_start_ts = time.perf_counter()
         self._csv_file = open(self.step_csv_path, "w", newline="", encoding="utf-8")
         self._csv_writer = csv.DictWriter(
             self._csv_file,
             fieldnames=[
                 "step",
+                "elapsed_sec",
                 "step_ms",
                 "forward_ms",
                 "backward_ms",
                 "optimizer_step_ms",
                 "checkpoint_ms",
+                "loss",
             ],
         )
         self._csv_writer.writeheader()
@@ -148,18 +157,25 @@ class SimpleTrainerStats(base.TrainerStats):
         backward_ms = self.backward_stats.get_last() / 1000000
         optimizer_ms = self.optimizer_step_stats.get_last() / 1000000
         checkpoint_ms = self.save_checkpoint_stats.get_last() / 1000000
+        elapsed_sec = 0.0
+        if self._train_start_ts is not None:
+            elapsed_sec = time.perf_counter() - self._train_start_ts
         print(f"step {step_ms} -- forward {forward_ms} -- backward {backward_ms} -- optimizer step {optimizer_ms}")
         if self._csv_writer is not None:
             self._csv_writer.writerow(
                 {
                     "step": self.iteration,
+                    "elapsed_sec": elapsed_sec,
                     "step_ms": step_ms,
                     "forward_ms": forward_ms,
                     "backward_ms": backward_ms,
                     "optimizer_step_ms": optimizer_ms,
                     "checkpoint_ms": checkpoint_ms,
+                    "loss": self._last_loss,
                 }
             )
+            if self._csv_file is not None:
+                self._csv_file.flush()
 
     def log_stats(self) -> None:
         """Log basic statistics on the time measurements.
@@ -194,7 +210,20 @@ class SimpleTrainerStats(base.TrainerStats):
         with open(self.summary_json_path, "w", encoding="utf-8") as fp:
             json.dump(summary, fp, indent=2)
         print(f"simple summary saved to {self.summary_json_path}")
+        if self.plot_metrics:
+            plot_paths = utils.generate_metric_plots_from_csv(
+                csv_path=self.step_csv_path,
+                output_dir=self.output_dir,
+                output_file_prefix=self.output_file_prefix,
+                x_axis=self.plot_x_axis,
+                exclude_metrics=["step"],
+                max_metrics=self.plot_max_metrics,
+            )
+            if plot_paths:
+                print(f"simple plots saved to {os.path.dirname(plot_paths[0])}")
+            else:
+                print("simple plots were not generated (insufficient data or plotting backend unavailable)")
 
     def log_loss(self, loss : torch.Tensor) -> None:
-        pass
+        self._last_loss = float(loss.detach().cpu().item())
 

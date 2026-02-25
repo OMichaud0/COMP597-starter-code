@@ -18,3 +18,6 @@ class TrainerStatsConfig(_BaseConfig):
         self._arg_gpu_index = _Arg(type=int, default=-1, help="GPU index to monitor (-1 uses device index or 0).")
         self._arg_output_dir = _Arg(type=str, default=".", help="Directory where resource stats files are written.")
         self._arg_output_file_prefix = _Arg(type=str, default="resource_stats", help="Filename prefix for resource stats files.")
+        self._arg_plot_metrics = _Arg(type=int, default=1, help="Generate metric-over-time PNG plots at the end of training (1=yes, 0=no).")
+        self._arg_plot_x_axis = _Arg(type=str, default="elapsed_sec", help="Column to use on x-axis for generated plots (e.g. elapsed_sec or step).")
+        self._arg_plot_max_metrics = _Arg(type=int, default=0, help="Maximum number of metrics to plot (<=0 means plot all).")
