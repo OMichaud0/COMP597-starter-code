@@ -106,10 +106,8 @@ class SimpleTrainer(base.Trainer):
     def forward(self, i: int, batch: Any, model_kwargs: Dict[str, Any]) -> torch.Tensor:
         self.optimizer.zero_grad() #Zero the gradients
         # Use autocast to enable mixed precision (fp16 compute, fp32 gradients for stable optimizer update)
-        if self.use_amp:
-            with autocast(device_type='cuda', dtype=torch.float16):
-                outputs = self.model(**batch, **model_kwargs)
-        else:
+        # Use enabled parameter for compatibility with older PyTorch versions
+        with autocast(enabled=self.use_amp):
             outputs = self.model(**batch, **model_kwargs)
         return outputs.loss
 
