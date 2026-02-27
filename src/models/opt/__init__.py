@@ -21,7 +21,7 @@ def init_model(conf: config.Config, dataset: data.Dataset) -> Tuple[trainer.Trai
     """
     opt_cfg = getattr(getattr(conf, "model_configs", None), "opt", None)
     hf_name = getattr(opt_cfg, "hf_name", "facebook/opt-350m") if opt_cfg else "facebook/opt-350m"
-    dtype = getattr(opt_cfg, "dtype", "fp16") if opt_cfg else "fp16"
+    dtype = getattr(opt_cfg, "dtype", "fp32") if opt_cfg else "fp32"
 
     model, tokenizer = load_opt(model_name=hf_name, dtype=dtype)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
