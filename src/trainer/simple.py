@@ -11,6 +11,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Use gradient scaler for mixed precision training to prevent fp16 overflow
+try:
+    from torch.cuda.amp import GradScaler
+    HAS_AMP = True
+except ImportError:
+    HAS_AMP = False
+
 class SimpleTrainer(base.Trainer):
     """Trainer for a simple iteration.
 
@@ -65,6 +72,8 @@ class SimpleTrainer(base.Trainer):
         # TODO remove conf as it is unused.
         self.conf = conf
         self._last_grad_norm = 0.0
+        # Initialize gradient scaler for mixed precision training (fp16 with fp32 optimizer state)
+        self.grad_scaler = GradScaler() if HAS_AMP and device.type == 'cuda' else None
 
     def checkpoint_dict(self, i: int) -> Dict[str, Any]:
         super_dict = super().checkpoint_dict(i)
@@ -95,7 +104,13 @@ class SimpleTrainer(base.Trainer):
         return outputs.loss
 
     def backward(self, i: int, loss: torch.Tensor) -> None:
-        loss.backward()
+        # Scale loss to prevent underflow in fp16
+        if self.grad_scaler is not None:
+            scaled_loss = self.grad_scaler.scale(loss)
+            scaled_loss.backward()
+        else:
+            loss.backward()
+
         self._last_grad_norm = self._compute_grad_norm()
         has_nan_grad = False
         has_inf_grad = False
@@ -111,7 +126,15 @@ class SimpleTrainer(base.Trainer):
 
     def optimizer_step(self, i: int) -> None:
         weight_norm_before = self._compute_weight_norm()
-        self.optimizer.step()
+
+        # Use gradient scaler's step to unscale gradients and update weights in fp32
+        if self.grad_scaler is not None:
+            self.grad_scaler.unscale_(self.optimizer)
+            self.grad_scaler.step(self.optimizer)
+            self.grad_scaler.update()
+        else:
+            self.optimizer.step()
+
         self.lr_scheduler.step()
         weight_norm_after = self._compute_weight_norm()
 
