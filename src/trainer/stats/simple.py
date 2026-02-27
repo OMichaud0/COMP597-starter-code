@@ -3,6 +3,7 @@ import csv
 import json
 import os
 import time
+import math
 import src.config as config
 import src.trainer.stats.base as base
 import src.trainer.stats.utils as utils
@@ -225,5 +226,15 @@ class SimpleTrainerStats(base.TrainerStats):
                 print("simple plots were not generated (insufficient data or plotting backend unavailable)")
 
     def log_loss(self, loss : torch.Tensor) -> None:
-        self._last_loss = float(loss.detach().cpu().item())
+        loss_value = float(loss.detach().cpu().item())
+
+        # Check for NaN or Inf values
+        if math.isnan(loss_value):
+            logger.warning(f"WARNING: Loss is NaN at step {self.iteration + 1}")
+        elif math.isinf(loss_value):
+            logger.warning(f"WARNING: Loss is Inf at step {self.iteration + 1}")
+        elif loss_value == 0.0:
+            logger.warning(f"WARNING: Loss is zero at step {self.iteration + 1}")
+
+        self._last_loss = loss_value
 
