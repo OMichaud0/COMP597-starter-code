@@ -11,12 +11,17 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Use gradient scaler for mixed precision training to prevent fp16 overflow
+# Use autocast for mixed precision training (fp32 model with fp16 forward computations)
 try:
-    from torch.cuda.amp import GradScaler
+    from torch.cuda.amp import autocast
     HAS_AMP = True
 except ImportError:
     HAS_AMP = False
+    # Fallback autocast that does nothing (for CPU)
+    from contextlib import contextmanager
+    @contextmanager
+    def autocast(*args, **kwargs):
+        yield
 
 class SimpleTrainer(base.Trainer):
     """Trainer for a simple iteration.
@@ -72,8 +77,8 @@ class SimpleTrainer(base.Trainer):
         # TODO remove conf as it is unused.
         self.conf = conf
         self._last_grad_norm = 0.0
-        # Initialize gradient scaler for mixed precision training (fp16 with fp32 optimizer state)
-        self.grad_scaler = GradScaler() if HAS_AMP and device.type == 'cuda' else None
+        # Enable autocast for mixed precision training (fp32 model, fp16 forward ops)
+        self.use_amp = HAS_AMP and device.type == 'cuda'
 
     def checkpoint_dict(self, i: int) -> Dict[str, Any]:
         super_dict = super().checkpoint_dict(i)
@@ -100,16 +105,17 @@ class SimpleTrainer(base.Trainer):
 
     def forward(self, i: int, batch: Any, model_kwargs: Dict[str, Any]) -> torch.Tensor:
         self.optimizer.zero_grad() #Zero the gradients
-        outputs = self.model(**batch, **model_kwargs)
+        # Use autocast to enable mixed precision (fp16 compute, fp32 gradients for stable optimizer update)
+        if self.use_amp:
+            with autocast(device_type='cuda', dtype=torch.float16):
+                outputs = self.model(**batch, **model_kwargs)
+        else:
+            outputs = self.model(**batch, **model_kwargs)
         return outputs.loss
 
     def backward(self, i: int, loss: torch.Tensor) -> None:
-        # Scale loss to prevent underflow in fp16
-        if self.grad_scaler is not None:
-            scaled_loss = self.grad_scaler.scale(loss)
-            scaled_loss.backward()
-        else:
-            loss.backward()
+        # Regular backward - gradients will be fp32 because model is fp32
+        loss.backward()
 
         self._last_grad_norm = self._compute_grad_norm()
         has_nan_grad = False
@@ -126,15 +132,8 @@ class SimpleTrainer(base.Trainer):
 
     def optimizer_step(self, i: int) -> None:
         weight_norm_before = self._compute_weight_norm()
-
-        # Use gradient scaler's step to unscale gradients and update weights in fp32
-        if self.grad_scaler is not None:
-            self.grad_scaler.unscale_(self.optimizer)
-            self.grad_scaler.step(self.optimizer)
-            self.grad_scaler.update()
-        else:
-            self.optimizer.step()
-
+        # Standard optimizer step (no GradScaler needed with fp32 model + autocast)
+        self.optimizer.step()
         self.lr_scheduler.step()
         weight_norm_after = self._compute_weight_norm()
 
