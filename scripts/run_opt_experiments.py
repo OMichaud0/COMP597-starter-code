@@ -334,6 +334,12 @@ def main() -> int:
     parser.add_argument("--probe-duration-sec", type=float, default=20.0)
     parser.add_argument("--skip-probe", action="store_true")
     parser.add_argument("--max-batch-size", type=int, default=0)
+    parser.add_argument(
+        "--fixed-batch-size",
+        type=int,
+        default=16,
+        help="If >0, skip probing and use this value as the max batch size (default: 16).",
+    )
     parser.add_argument("--profiles", type=str, default="A,B,C")
     args = parser.parse_args()
 
@@ -356,7 +362,9 @@ def main() -> int:
         "runs": [],
     }
 
-    if args.skip_probe:
+    if args.fixed_batch_size > 0:
+        max_batch = int(args.fixed_batch_size)
+    elif args.skip_probe:
         if args.max_batch_size <= 0:
             raise ValueError("--max-batch-size must be >0 when --skip-probe is used")
         max_batch = args.max_batch_size
