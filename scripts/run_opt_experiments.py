@@ -190,8 +190,11 @@ def probe_max_batch(
     high_fail = None
     batch = max(1, args.probe_start_batch)
 
+    print(f"[PROBE] Starting batch size probe from {args.probe_start_batch}...", flush=True)
+
     while True:
         run_dir = os.path.join(out_dir, "probe", f"batch_{batch}")
+        print(f"[PROBE] Testing batch size {batch}...", flush=True)
         cmd = launcher + [
             "--logging.level",
             args.logging_level,
@@ -233,13 +236,16 @@ def probe_max_batch(
         records.append(result)
 
         if result["returncode"] == 0:
+            print(f"[PROBE] Batch {batch} succeeded ({result['elapsed_sec']:.1f}s)", flush=True)
             low_success = batch
             if batch >= args.probe_max_batch:
+                print(f"[PROBE] Reached max probe batch {args.probe_max_batch}", flush=True)
                 break
             next_batch = batch * 2
             if next_batch > args.probe_max_batch:
                 next_batch = args.probe_max_batch
             if next_batch == batch:
+                print(f"[PROBE] Max batch is {batch}", flush=True)
                 break
             batch = next_batch
             continue
@@ -248,18 +254,21 @@ def probe_max_batch(
             raise RuntimeError(
                 f"Probe failed with non-OOM error at batch {batch}. See logs: {run_dir}"
             )
+        print(f"[PROBE] Batch {batch} failed with OOM", flush=True)
         high_fail = batch
         break
 
     if high_fail is None:
         return max(1, low_success), records
 
+    print(f"[PROBE] Binary search between {lo} and {hi}", flush=True)
     lo = low_success + 1
     hi = high_fail - 1
     best = low_success
     while lo <= hi:
         mid = (lo + hi) // 2
         run_dir = os.path.join(out_dir, "probe", f"batch_{mid}")
+        print(f"[PROBE] Binary search: testing batch {mid} ({lo}-{hi})", flush=True)
         cmd = launcher + [
             "--logging.level",
             args.logging_level,
@@ -300,15 +309,18 @@ def probe_max_batch(
         result.update({"batch_size": mid, "command": cmd})
         records.append(result)
         if result["returncode"] == 0:
+            print(f"[PROBE] Batch {mid} succeeded", flush=True)
             best = mid
             lo = mid + 1
         elif result["oom_detected"]:
+            print(f"[PROBE] Batch {mid} failed with OOM", flush=True)
             hi = mid - 1
         else:
             raise RuntimeError(
                 f"Probe binary search failed with non-OOM error at batch {mid}. See logs: {run_dir}"
             )
 
+    print(f"[PROBE] Probe complete. Max batch size: {best}", flush=True)
     return max(1, best), records
 
 
@@ -379,9 +391,18 @@ def main() -> int:
     manifest["batch_sweep"] = batch_sweep
 
     profiles = [p.strip() for p in args.profiles.split(",") if p.strip()]
+    total_runs = len(batch_sweep) * len(profiles) * args.repeats
+    current_run = 0
+    start_time = time.time()
+
+    print(f"[MAIN] Starting experiment matrix with {len(batch_sweep)} batch sizes, {len(profiles)} profiles, {args.repeats} repeats = {total_runs} total runs", flush=True)
+
     for batch_size in batch_sweep:
         for profile in profiles:
             for repeat in range(1, args.repeats + 1):
+                current_run += 1
+                elapsed_total = time.time() - start_time
+                print(f"[MAIN] Run {current_run}/{total_runs} (batch={batch_size}, profile={profile}, repeat={repeat}) - {elapsed_total:.1f}s elapsed", flush=True)
                 run_dir = os.path.join(
                     out_dir,
                     f"batch_{batch_size}",
@@ -409,18 +430,24 @@ def main() -> int:
                     json.dump(record, fp, indent=2)
                 manifest["runs"].append(record)
 
+                status_str = "SUCCESS" if result["returncode"] == 0 else "FAILED"
+                print(f"[MAIN] Run {current_run}/{total_runs} {status_str} ({result['elapsed_sec']:.1f}s)", flush=True)
+
                 if result["returncode"] != 0:
                     with open(os.path.join(out_dir, "manifest.json"), "w", encoding="utf-8") as fp:
                         json.dump(manifest, fp, indent=2)
-                    print(f"Run failed: batch={batch_size}, profile={profile}, repeat={repeat}", file=sys.stderr)
-                    print(f"See logs under: {run_dir}", file=sys.stderr)
+                    print(f"[ERROR] Run failed: batch={batch_size}, profile={profile}, repeat={repeat}", file=sys.stderr, flush=True)
+                    print(f"[ERROR] See logs under: {run_dir}", file=sys.stderr, flush=True)
                     return 1
 
     with open(os.path.join(out_dir, "manifest.json"), "w", encoding="utf-8") as fp:
         json.dump(manifest, fp, indent=2)
 
-    print(f"Experiment matrix complete. Output root: {out_dir}")
-    print(f"Max batch discovered: {max_batch}, using sweep: {batch_sweep}")
+    total_elapsed = time.time() - start_time
+    print(f"[MAIN] Experiment matrix complete!", flush=True)
+    print(f"[MAIN] Total time: {total_elapsed:.1f}s ({total_elapsed/60:.1f}m)", flush=True)
+    print(f"[MAIN] Output root: {out_dir}", flush=True)
+    print(f"[MAIN] Max batch discovered: {max_batch}, using sweep: {batch_sweep}", flush=True)
     return 0
 
 
