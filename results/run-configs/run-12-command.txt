@@ -1,1 +1,15 @@
-./scripts/srun.sh   --logging.level INFO   --model opt   --data opt   --trainer_stats resource   --trainer_stats_configs.resource.output_dir './results/run_12'   --trainer_stats_configs.resource.output_file_prefix run_12   --trainer_stats_configs.resource.log_every 10000   --trainer_stats_configs.resource.include_energy 1   --trainer_stats_configs.resource.carbon_intensity_gco2_per_kwh 40.0   --trainer_stats_configs.resource.plot_metrics 1   --trainer_stats_configs.resource.plot_x_axis elapsed_sec   --data_configs.opt.max_samples 100000   --data_configs.opt.batch_size 16   --data_configs.opt.num_workers 0
+./scripts/srun.sh   
+--logging.level INFO   
+--model opt   
+--data opt   
+--trainer_stats resource   
+--trainer_stats_configs.resource.output_dir './results/run_12'   
+--trainer_stats_configs.resource.output_file_prefix run_12   
+--trainer_stats_configs.resource.log_every 10000   
+--trainer_stats_configs.resource.include_energy 1   
+--trainer_stats_configs.resource.carbon_intensity_gco2_per_kwh 40.0   
+--trainer_stats_configs.resource.plot_metrics 1   
+--trainer_stats_configs.resource.plot_x_axis elapsed_sec   
+--data_configs.opt.max_samples 100000   
+--data_configs.opt.batch_size 16   
+--data_configs.opt.num_workers 0
