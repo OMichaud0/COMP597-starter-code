@@ -15,3 +15,5 @@ Average time breakdown:
   Forward:   28.8%
   Backward:  55.8%
   Optimizer: 15.4%
+
+  
