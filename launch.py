@@ -11,11 +11,18 @@ logging.basicConfig(
 from typing import Any, Dict, Optional, Tuple
 import argparse
 import gc
+import random
 import src.config as config
 import src.data as data
 import src.models as models
 import src.trainer as trainer
 import src.trainer.stats as trainer_stats
+import torch
+
+try:
+    import numpy as np
+except Exception:  # pragma: no cover - optional dependency
+    np = None
 
 def setup_logging(conf : config.Config) -> None:
     logging.basicConfig(
@@ -46,6 +53,13 @@ def get_conf() -> config.Config:
 
 def main():
     conf = get_conf()
+    random.seed(conf.seed)
+    if np is not None:
+        np.random.seed(conf.seed)
+    torch.manual_seed(conf.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(conf.seed)
+
     setup_logging(conf)
     logger.debug(f"Configuration: \n{conf}")
     logger.info(f"available models: {models.get_available_models()}")

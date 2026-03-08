@@ -58,6 +58,8 @@ class ResourceTrainerStats(base.TrainerStats):
         self.plot_metrics = bool(int(getattr(cfg, "plot_metrics", 1)))
         self.plot_x_axis = str(getattr(cfg, "plot_x_axis", "elapsed_sec"))
         self.plot_max_metrics = int(getattr(cfg, "plot_max_metrics", 0))
+        self.sample_interval_ms = max(0, int(getattr(cfg, "sample_interval_ms", 500)))
+        self.flush_every_n = int(getattr(cfg, "flush_every_n", 50))
         self.step_csv_path = os.path.join(self.output_dir, f"{self.output_file_prefix}_steps.csv")
         self.summary_json_path = os.path.join(self.output_dir, f"{self.output_file_prefix}_summary.json")
 
@@ -93,6 +95,8 @@ class ResourceTrainerStats(base.TrainerStats):
         self._train_duration_sec = 0.0
         self._csv_file = None
         self._csv_writer = None
+        self._last_sample_ts = None
+        self._pending_flush_rows = 0
         self._step_fieldnames = [
             "step",
             "elapsed_sec",
@@ -124,6 +128,8 @@ class ResourceTrainerStats(base.TrainerStats):
         self._csv_file = open(self.step_csv_path, "w", newline="", encoding="utf-8")
         self._csv_writer = csv.DictWriter(self._csv_file, fieldnames=self._step_fieldnames)
         self._csv_writer.writeheader()
+        self._last_sample_ts = None
+        self._pending_flush_rows = 0
 
         if psutil is None:
             logger.warning("psutil is not available; system/process stats will be disabled")
@@ -165,6 +171,8 @@ class ResourceTrainerStats(base.TrainerStats):
             self._train_duration_sec = time.perf_counter() - self._train_start_ts
 
         if self._csv_file is not None:
+            if self._pending_flush_rows > 0:
+                self._csv_file.flush()
             self._csv_file.close()
             self._csv_file = None
 
@@ -212,6 +220,13 @@ class ResourceTrainerStats(base.TrainerStats):
 
     def log_step(self) -> None:
         self.iteration += 1
+        now_ts = time.perf_counter()
+        if self.sample_interval_ms > 0 and self._last_sample_ts is not None:
+            elapsed_ms = (now_ts - self._last_sample_ts) * 1000.0
+            if elapsed_ms < float(self.sample_interval_ms):
+                return
+
+        self._last_sample_ts = now_ts
         sample = self._sample()
         if sample is None:
             return
@@ -219,8 +234,14 @@ class ResourceTrainerStats(base.TrainerStats):
         if self._csv_writer is not None:
             row = {key: sample.get(key, None) for key in self._step_fieldnames}
             self._csv_writer.writerow(row)
-            if self._csv_file is not None:
+            self._pending_flush_rows += 1
+            if (
+                self._csv_file is not None
+                and self.flush_every_n > 0
+                and self._pending_flush_rows >= self.flush_every_n
+            ):
                 self._csv_file.flush()
+                self._pending_flush_rows = 0
 
         if (self.iteration % self.log_every) != 0:
             return

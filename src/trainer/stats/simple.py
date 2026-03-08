@@ -73,10 +73,12 @@ class SimpleTrainerStats(base.TrainerStats):
         self.plot_metrics = bool(int(getattr(simple_cfg, "plot_metrics", 1)))
         self.plot_x_axis = str(getattr(simple_cfg, "plot_x_axis", "elapsed_sec"))
         self.plot_max_metrics = int(getattr(simple_cfg, "plot_max_metrics", 0))
+        self.flush_every_n = int(getattr(simple_cfg, "flush_every_n", 50))
         self.step_csv_path = os.path.join(self.output_dir, f"{self.output_file_prefix}_steps.csv")
         self.summary_json_path = os.path.join(self.output_dir, f"{self.output_file_prefix}_summary.json")
         self._csv_file = None
         self._csv_writer = None
+        self._pending_flush_rows = 0
         self._train_start_ts = None
         self._last_loss = None
 
@@ -98,9 +100,12 @@ class SimpleTrainerStats(base.TrainerStats):
             ],
         )
         self._csv_writer.writeheader()
+        self._pending_flush_rows = 0
 
     def stop_train(self) -> None:
         if self._csv_file is not None:
+            if self._pending_flush_rows > 0:
+                self._csv_file.flush()
             self._csv_file.close()
             self._csv_file = None
 
@@ -175,8 +180,14 @@ class SimpleTrainerStats(base.TrainerStats):
                     "loss": self._last_loss,
                 }
             )
-            if self._csv_file is not None:
+            self._pending_flush_rows += 1
+            if (
+                self._csv_file is not None
+                and self.flush_every_n > 0
+                and self._pending_flush_rows >= self.flush_every_n
+            ):
                 self._csv_file.flush()
+                self._pending_flush_rows = 0
 
     def log_stats(self) -> None:
         """Log basic statistics on the time measurements.

@@ -37,6 +37,36 @@ If you decide to store your dataset on the shared partition (see the provided Sl
 - [CodeCarbon Colab Tutorial](https://colab.research.google.com/drive/1eBLk-Fne8YCzuwVLiyLU8w0wNsrfh3xq)
 - [CodeCarbon documentation](https://mlco2.github.io/codecarbon/)
 
+## OPT Experiment Automation
+
+For the 5-minute x 3 repeats batch-sweep protocol, use:
+
+```bash
+python3 scripts/run_opt_experiments.py \
+  --repo-root . \
+  --output-root ./results/opt_experiments \
+  --launcher "python3 launch.py" \
+  --duration-sec 300 \
+  --repeats 3
+```
+
+If running through Slurm wrapper:
+
+```bash
+python3 scripts/run_opt_experiments.py \
+  --repo-root . \
+  --output-root ./results/opt_experiments \
+  --launcher "./scripts/srun.sh" \
+  --duration-sec 300 \
+  --repeats 3
+```
+
+Aggregate outputs (timelines, phase bars, overhead, GPU-underutilization windows):
+
+```bash
+python3 scripts/aggregate_opt_experiments.py ./results/opt_experiments/<run-dir>
+```
+
 ---
 
 
