@@ -8,6 +8,8 @@ import statistics
 from collections import defaultdict
 from typing import Dict, List, Tuple
 
+from log_utils import Logger, LogLevel
+
 
 def mean_std(values: List[float]) -> Tuple[float, float]:
     if not values:
@@ -179,7 +181,8 @@ def main() -> int:
     parser.add_argument("--gpu-util-threshold", type=float, default=99.0, help="GPU util threshold for idle window detection.")
     args = parser.parse_args()
 
-    print("[AGGREGATE] Starting aggregation of OPT experiment outputs...", flush=True)
+    logger = Logger("AGGREGATE", LogLevel.INFO)
+    logger.info("Starting aggregation of OPT experiment outputs...")
     exp_dir = os.path.abspath(args.experiment_dir)
     manifest_path = resolve_manifest_path(exp_dir)
     if not manifest_path:
@@ -187,12 +190,12 @@ def main() -> int:
             f"manifest.json not found under {exp_dir} or any immediate child directory"
         )
     exp_dir = os.path.dirname(manifest_path)
-    print(f"[AGGREGATE] Found manifest at {manifest_path}", flush=True)
+    logger.info(f"Found manifest at {manifest_path}")
 
     manifest = read_json(manifest_path)
     reports_dir = os.path.join(exp_dir, "reports")
     os.makedirs(reports_dir, exist_ok=True)
-    print(f"[AGGREGATE] Using reports directory: {reports_dir}", flush=True)
+    logger.info(f"Using reports directory: {reports_dir}")
 
     grouped: Dict[Tuple[int, str], List[Dict]] = defaultdict(list)
     for run in manifest.get("runs", []):
@@ -200,11 +203,11 @@ def main() -> int:
             grouped[(int(run["batch_size"]), run["profile"])].append(run)
 
     batch_sizes = sorted({k[0] for k in grouped.keys()}, reverse=True)
-    print(f"[AGGREGATE] Found {len(batch_sizes)} batch sizes to process: {batch_sizes}", flush=True)
+    logger.info(f"Found {len(batch_sizes)} batch sizes to process: {batch_sizes}")
     overall_report = {"batches": {}, "overhead": {}}
 
     for batch_idx, batch_size in enumerate(batch_sizes, 1):
-        print(f"[AGGREGATE] Processing batch {batch_idx}/{len(batch_sizes)} (batch_size={batch_size})", flush=True)
+        logger.info(f"Processing batch {batch_idx}/{len(batch_sizes)} (batch_size={batch_size})")
         batch_dir = os.path.join(reports_dir, f"batch_{batch_size}")
         os.makedirs(batch_dir, exist_ok=True)
         batch_report = {"profiles": {}}
@@ -218,7 +221,7 @@ def main() -> int:
             runs = grouped.get((batch_size, profile), [])
             if not runs:
                 continue
-            print(f"[AGGREGATE]   Processing profile={profile} ({len(runs)} runs)", flush=True)
+            logger.info(f"Processing profile={profile} ({len(runs)} runs)")
             profile_dir = os.path.join(batch_dir, f"profile_{profile}")
             os.makedirs(profile_dir, exist_ok=True)
 
@@ -234,7 +237,7 @@ def main() -> int:
                 phase_opt = []
                 timelines = []
                 timeline_metrics = ["gpu_util", "gpu_mem_used", "proc_cpu_percent"]
-                print(f"[AGGREGATE]     Reading phase data from {len(runs)} runs...", flush=True)
+                logger.info(f"Reading phase data from {len(runs)} runs...")
                 for run in runs:
                     run_dir = run["run_dir"]
                     simple_summary_path = os.path.join(run_dir, "simple_summary.json")
@@ -252,7 +255,7 @@ def main() -> int:
                         rows = read_csv_rows(resource_steps_path)
                         timelines.append(build_timeline(rows, timeline_metrics))
 
-                print(f"[AGGREGATE]     Generating phase bars report...", flush=True)
+                logger.info(f"Generating phase bars report...")
                 phase_report = {
                     "forward_ms": {"mean": mean_std(phase_forward)[0], "std": mean_std(phase_forward)[1]},
                     "backward_ms": {"mean": mean_std(phase_backward)[0], "std": mean_std(phase_backward)[1]},
@@ -264,7 +267,7 @@ def main() -> int:
                 maybe_plot_phase_bars(os.path.join(profile_dir, "phase_bars.png"), phase_report)
 
                 if timelines:
-                    print(f"[AGGREGATE]     Aggregating {len(timelines)} timeline data files...", flush=True)
+                    logger.info(f"Aggregating {len(timelines)} timeline data files...")
                     aggregated = aggregate_timelines(timelines, timeline_metrics)
                     timeline_path = os.path.join(profile_dir, "timeline_aggregate.csv")
                     with open(timeline_path, "w", newline="", encoding="utf-8") as fp:
@@ -275,11 +278,11 @@ def main() -> int:
                         writer.writeheader()
                         for row in aggregated:
                             writer.writerow(row)
-                    print(f"[AGGREGATE]     Generating timeline plots...", flush=True)
+                    logger.info(f"Generating timeline plots...")
                     maybe_plot_timeline(
                         os.path.join(profile_dir, "timeline_aggregate.png"), aggregated, timeline_metrics
                     )
-                    print(f"[AGGREGATE]     Detecting GPU idle windows...", flush=True)
+                    logger.info(f"Detecting GPU idle windows...")
                     idle_windows = detect_gpu_idle_windows(aggregated, args.gpu_util_threshold)
                     p_report["gpu_idle_windows"] = idle_windows
                     with open(os.path.join(profile_dir, "gpu_idle_windows.json"), "w", encoding="utf-8") as fp:
@@ -295,12 +298,12 @@ def main() -> int:
         with open(os.path.join(batch_dir, "summary.json"), "w", encoding="utf-8") as fp:
             json.dump(batch_report, fp, indent=2)
 
-    print(f"[AGGREGATE] Writing overall summary...", flush=True)
+    logger.info(f"Writing overall summary...")
     with open(os.path.join(reports_dir, "overall_summary.json"), "w", encoding="utf-8") as fp:
         json.dump(overall_report, fp, indent=2)
 
-    print(f"[AGGREGATE] Aggregation complete!", flush=True)
-    print(f"[AGGREGATE] Reports written to: {reports_dir}", flush=True)
+    logger.info(f"Aggregation complete!")
+    logger.info(f"Reports written to: {reports_dir}")
     return 0
 
 
