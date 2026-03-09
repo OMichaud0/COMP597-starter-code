@@ -1,0 +1,10 @@
+{
+  "iterations": 822,
+  "averages_ms": {
+    "step_ms": 362.62576361070546,
+    "forward_ms": 81.47021414841845,
+    "backward_ms": 184.65969686374703,
+    "optimizer_step_ms": 95.7317534647203,
+    "checkpoint_ms": 0.0
+  }
+}

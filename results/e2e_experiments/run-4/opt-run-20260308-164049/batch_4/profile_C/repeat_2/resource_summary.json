@@ -1,0 +1,37 @@
+{
+  "iterations": 1216,
+  "total_training_time_sec": 300.2265795338899,
+  "carbon_intensity_gco2_per_kwh": 40.0,
+  "cumulative_gpu_energy_kwh": 0.014623640833333331,
+  "cumulative_carbon_gco2": 0.5849456333333332,
+  "averages": {
+    "gpu_util": 83.2555282555282,
+    "gpu_mem_used_mib": 11384.483415233412,
+    "gpu_mem_total_mib": 32760.0,
+    "gpu_power_w": 174.75075429975428,
+    "gpu_energy_mj": 129349.15724815725,
+    "step_energy_kwh": 3.593032145782149e-05,
+    "step_carbon_gco2": 0.0014372128583128578,
+    "torch_cuda_allocated_mib": 5071.7795884041025,
+    "torch_cuda_reserved_mib": 10595.233415233412,
+    "sys_mem_used_mib": 15301.012908860564,
+    "sys_mem_total_mib": 515475.12890625,
+    "sys_cpu_percent": 0.5073710073710078,
+    "proc_rss_mib": 2297.56587837838,
+    "proc_vms_mib": 24724.01175714066,
+    "proc_cpu_percent": 100.07174447174447,
+    "io_read_mb": null,
+    "io_write_mb": null,
+    "step_duration_ms": 244.956227819079
+  },
+  "peaks": {
+    "gpu_util": 90.0,
+    "gpu_mem_used_mib": 11391.25,
+    "gpu_power_w": 178.631,
+    "torch_cuda_allocated_mib": 5071.78173828125,
+    "torch_cuda_reserved_mib": 10602.0,
+    "sys_mem_used_mib": 15311.5078125,
+    "proc_rss_mib": 2305.7109375,
+    "step_duration_ms": 380.176078
+  }
+}

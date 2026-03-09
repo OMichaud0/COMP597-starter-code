@@ -1,0 +1,1 @@
+step,elapsed_sec,step_ms,forward_ms,backward_ms,optimizer_step_ms,checkpoint_ms,loss
