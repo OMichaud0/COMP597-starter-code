@@ -1,0 +1,37 @@
+{
+  "iterations": 1223,
+  "total_training_time_sec": 300.0439213551581,
+  "carbon_intensity_gco2_per_kwh": 40.0,
+  "cumulative_gpu_energy_kwh": 0.014644828888888885,
+  "cumulative_carbon_gco2": 0.5857931555555557,
+  "averages": {
+    "gpu_util": 83.87990196078435,
+    "gpu_mem_used_mib": 11384.499999999995,
+    "gpu_mem_total_mib": 32760.0,
+    "gpu_power_w": 175.89708088235298,
+    "gpu_energy_mj": 129219.07843137255,
+    "step_energy_kwh": 3.589418845315906e-05,
+    "step_carbon_gco2": 0.0014357675381263624,
+    "torch_cuda_allocated_mib": null,
+    "torch_cuda_reserved_mib": null,
+    "sys_mem_used_mib": null,
+    "sys_mem_total_mib": null,
+    "sys_cpu_percent": null,
+    "proc_rss_mib": null,
+    "proc_vms_mib": null,
+    "proc_cpu_percent": null,
+    "io_read_mb": null,
+    "io_write_mb": null,
+    "step_duration_ms": 243.79315843009022
+  },
+  "peaks": {
+    "gpu_util": 91.0,
+    "gpu_mem_used_mib": 11391.25,
+    "gpu_power_w": 179.667,
+    "torch_cuda_allocated_mib": null,
+    "torch_cuda_reserved_mib": null,
+    "sys_mem_used_mib": null,
+    "proc_rss_mib": null,
+    "step_duration_ms": 355.937351
+  }
+}

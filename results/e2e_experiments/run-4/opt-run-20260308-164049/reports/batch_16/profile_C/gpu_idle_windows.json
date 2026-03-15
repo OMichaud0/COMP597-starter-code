@@ -1,0 +1,12 @@
+[
+  {
+    "start_sec": 0,
+    "end_sec": 236,
+    "avg_gpu_util": 93.4184247538678
+  },
+  {
+    "start_sec": 238,
+    "end_sec": 299,
+    "avg_gpu_util": 93.16935483870968
+  }
+]
