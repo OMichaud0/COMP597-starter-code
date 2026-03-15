@@ -114,7 +114,15 @@ def simple_trainer(conf : config.Config, model : transformers.GPT2LMHeadModel, d
     )
 
     # Return the SimpleTrainer with the initialized components
-    return trainer.SimpleTrainer(loader=loader, model=model, optimizer=optimizer, lr_scheduler=scheduler, device=model.device, stats=trainer_stats.init_from_conf(conf=conf, device=model.device, num_train_steps=len(loader))), None
+    return trainer.SimpleTrainer(
+        loader=loader,
+        model=model,
+        optimizer=optimizer,
+        lr_scheduler=scheduler,
+        device=model.device,
+        stats=trainer_stats.init_from_conf(conf=conf, device=model.device, num_train_steps=len(loader)),
+        conf=conf,
+    ), None
 
 ################################################################################
 ##################################    Init    ##################################

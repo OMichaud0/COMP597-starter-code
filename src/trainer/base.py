@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import torch.utils.data as data
 import tqdm.auto
+import time
 
 class Trainer(ABC):
     """Base class implemented by all trainer objects.
@@ -59,6 +60,7 @@ class Trainer(ABC):
         self.stats = stats
         self.enable_checkpointing = enable_checkpointing
         self.checkpoint_frequency = checkpoint_frequency
+        self._collect_step_stats = True
 
     def should_save_checkpoint(self, i : int) -> bool:
         """Condition to device when to save a checkpoint.
@@ -212,19 +214,46 @@ class Trainer(ABC):
             model_kwargs = {}
         batch = self.process_batch(i, batch)
 
-        self.stats.start_forward()
+        if self._collect_step_stats:
+            self.stats.start_forward()
         loss = self.forward(i, batch, model_kwargs)
-        self.stats.stop_forward()
+        if self._collect_step_stats:
+            self.stats.stop_forward()
 
-        self.stats.start_backward()
+        if self._collect_step_stats:
+            self.stats.start_backward()
         self.backward(i, loss)
-        self.stats.stop_backward()
+        if self._collect_step_stats:
+            self.stats.stop_backward()
 
-        self.stats.start_optimizer_step()
+        if self._collect_step_stats:
+            self.stats.start_optimizer_step()
         self.optimizer_step(i)
-        self.stats.stop_optimizer_step()
+        if self._collect_step_stats:
+            self.stats.stop_optimizer_step()
         
         return loss, None
+
+    def _resolve_run_controls(self) -> Tuple[float, int, float]:
+        max_duration_sec = 0.0
+        warmup_steps = 0
+        warmup_sec = 0.0
+        conf = getattr(self, "conf", None)
+        if conf is None:
+            return max_duration_sec, warmup_steps, warmup_sec
+
+        trainer_cfgs = getattr(conf, "trainer_configs", None)
+        if trainer_cfgs is None:
+            return max_duration_sec, warmup_steps, warmup_sec
+
+        simple_cfg = getattr(trainer_cfgs, "simple", None)
+        if simple_cfg is None:
+            return max_duration_sec, warmup_steps, warmup_sec
+
+        max_duration_sec = max(0.0, float(getattr(simple_cfg, "max_duration_sec", 0.0)))
+        warmup_steps = max(0, int(getattr(simple_cfg, "warmup_steps", 0)))
+        warmup_sec = max(0.0, float(getattr(simple_cfg, "warmup_sec", 0.0)))
+        return max_duration_sec, warmup_steps, warmup_sec
 
     def train(self, model_kwargs : Optional[Dict[str, Any]]) -> None:
         """Training loop for the model.
@@ -256,20 +285,41 @@ class Trainer(ABC):
         """
         progress_bar = tqdm.auto.tqdm(range(len(self.loader)), desc="loss: N/A")
 
-        self.stats.start_train()
+        max_duration_sec, warmup_steps, warmup_sec = self._resolve_run_controls()
+        train_start_ts = time.perf_counter()
+        collecting_stats = warmup_steps <= 0 and warmup_sec <= 0.0
+        measure_start_ts = None
+
+        if collecting_stats:
+            measure_start_ts = train_start_ts
+            self.stats.start_train()
+
         for i, batch in enumerate(self.loader):
-            self.stats.start_step()
+            if not collecting_stats:
+                now_ts = time.perf_counter()
+                if i >= warmup_steps and (now_ts - train_start_ts) >= warmup_sec:
+                    collecting_stats = True
+                    measure_start_ts = now_ts
+                    self.stats.start_train()
+
+            self._collect_step_stats = collecting_stats
+            if collecting_stats:
+                self.stats.start_step()
             loss, descr = self.step(i, batch, model_kwargs)
-            self.stats.stop_step()
+            if collecting_stats:
+                self.stats.stop_step()
 
             if self.enable_checkpointing and self.should_save_checkpoint(i):
-                self.stats.start_save_checkpoint()
+                if collecting_stats:
+                    self.stats.start_save_checkpoint()
                 self.save_checkpoint(i)
-                self.stats.stop_save_checkpoint()
+                if collecting_stats:
+                    self.stats.stop_save_checkpoint()
 
             # for every rank, log the loss
-            self.stats.log_loss(loss)
-            self.stats.log_step()
+            if collecting_stats:
+                self.stats.log_loss(loss)
+                self.stats.log_step()
 
             if descr is not None:
                 progress_bar.clear()
@@ -277,6 +327,11 @@ class Trainer(ABC):
             progress_bar.clear()
             progress_bar.update(1)
 
-        self.stats.stop_train()
+            if collecting_stats and max_duration_sec > 0.0 and measure_start_ts is not None:
+                if (time.perf_counter() - measure_start_ts) >= max_duration_sec:
+                    break
+
+        if collecting_stats:
+            self.stats.stop_train()
+            self.stats.log_stats()
         progress_bar.close()
-        self.stats.log_stats()
