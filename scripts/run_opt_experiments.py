@@ -341,7 +341,7 @@ def main() -> int:
     parser.add_argument("--learning-rate", type=float, default=1e-6)
     parser.add_argument("--hf-name", type=str, default="facebook/opt-350m")
     parser.add_argument("--dtype", type=str, default="fp32")
-    parser.add_argument("--seq-len", type=int, default=1024)
+    parser.add_argument("--seq-len", type=int, default=512)
     parser.add_argument("--num-workers", type=int, default=0)
     parser.add_argument("--max-samples", type=int, default=100000000)
     parser.add_argument("--probe-start-batch", type=int, default=16)
