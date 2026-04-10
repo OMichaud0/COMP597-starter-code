@@ -13,6 +13,7 @@ from log_utils import Logger, LogLevel
 
 
 PROFILE_ORDER = ["A", "B", "C"]
+RESOURCE_PROFILES = ["B", "C"]
 PHASE_METRICS = ["forward_ms", "backward_ms", "optimizer_step_ms"]
 RESOURCE_METRICS = [
     "gpu_util",
@@ -271,6 +272,53 @@ def save_phase_stacked_bar(plt, out_path: str, phase_row: Dict[str, float]) -> N
     plt.close(fig)
 
 
+def finite_values(values: Sequence[float]) -> List[float]:
+    return [float(v) for v in values if v is not None and not math.isnan(float(v))]
+
+
+def padded_limits(values: Sequence[float], pad_ratio: float = 0.05) -> Optional[Tuple[float, float]]:
+    clean = finite_values(values)
+    if not clean:
+        return None
+    lo = min(clean)
+    hi = max(clean)
+    if hi == lo:
+        delta = max(abs(hi) * pad_ratio, 1e-9)
+        return lo - delta, hi + delta
+    span = hi - lo
+    return lo - span * pad_ratio, hi + span * pad_ratio
+
+
+def compute_global_timeline_limits(
+    series_by_batch: Dict[int, List[Dict[str, float]]],
+    metrics: List[str],
+) -> Tuple[Optional[Tuple[float, float]], Dict[str, Tuple[float, float]]]:
+    elapsed_vals: List[float] = []
+    metric_ranges: Dict[str, Tuple[float, float]] = {}
+    for rows in series_by_batch.values():
+        elapsed_vals.extend([float(r.get("elapsed_sec", float("nan"))) for r in rows])
+
+    x_lim = None
+    if elapsed_vals:
+        max_elapsed = max(finite_values(elapsed_vals), default=float("nan"))
+        if not math.isnan(max_elapsed):
+            x_lim = (0.0, max_elapsed)
+
+    for metric in metrics:
+        vals: List[float] = []
+        for rows in series_by_batch.values():
+            for row in rows:
+                mean = float(row.get(f"{metric}_mean", float("nan")))
+                std = float(row.get(f"{metric}_std", 0.0))
+                if not math.isnan(mean):
+                    vals.append(mean + (0.0 if math.isnan(std) else std))
+                    vals.append(mean - (0.0 if math.isnan(std) else std))
+        lim = padded_limits(vals)
+        if lim is not None:
+            metric_ranges[metric] = lim
+    return x_lim, metric_ranges
+
+
 def save_timeline_with_band(
     plt,
     out_path: str,
@@ -278,6 +326,8 @@ def save_timeline_with_band(
     metrics: List[Tuple[str, str, str]],
     title: str,
     xlabel: str = "Elapsed Time (sec)",
+    x_lim: Optional[Tuple[float, float]] = None,
+    y_lims: Optional[Dict[str, Tuple[float, float]]] = None,
 ) -> None:
     if not rows:
         return
@@ -293,9 +343,14 @@ def save_timeline_with_band(
         ax.plot(x, y, color=color, linewidth=1.8, label="mean")
         ax.fill_between(x, lower, upper, color=color, alpha=0.2, label="std")
         ax.set_ylabel(label)
+        if y_lims and metric in y_lims:
+            lo, hi = y_lims[metric]
+            ax.set_ylim(lo, hi)
         ax.grid(True, alpha=0.3)
         ax.legend(loc="best")
     axes[-1].set_xlabel(xlabel)
+    if x_lim is not None:
+        axes[-1].set_xlim(*x_lim)
     fig.suptitle(title)
     fig.tight_layout()
     fig.savefig(out_path, dpi=150)
@@ -309,6 +364,8 @@ def save_overlay_timeline_with_band(
     metrics: List[Tuple[str, str, str]],
     title: str,
     ylabel: str,
+    x_lim: Optional[Tuple[float, float]] = None,
+    y_lim: Optional[Tuple[float, float]] = None,
 ) -> None:
     if not rows:
         return
@@ -323,6 +380,10 @@ def save_overlay_timeline_with_band(
         ax.fill_between(x, lower, upper, color=color, alpha=0.15, label=f"{label} std")
     ax.set_xlabel("Elapsed Time (sec)")
     ax.set_ylabel(ylabel)
+    if x_lim is not None:
+        ax.set_xlim(*x_lim)
+    if y_lim is not None:
+        ax.set_ylim(*y_lim)
     ax.set_title(title)
     ax.grid(True, alpha=0.3)
     ax.legend(loc="best", ncol=3)
@@ -338,6 +399,9 @@ def save_dual_axis_timeline(
     left_metric: Tuple[str, str, str],
     right_metric: Tuple[str, str, str],
     title: str,
+    x_lim: Optional[Tuple[float, float]] = None,
+    left_y_lim: Optional[Tuple[float, float]] = None,
+    right_y_lim: Optional[Tuple[float, float]] = None,
 ) -> None:
     if not rows:
         return
@@ -354,6 +418,12 @@ def save_dual_axis_timeline(
     ax1.set_xlabel("Elapsed Time (sec)")
     ax1.set_ylabel(llabel, color=lcolor)
     ax2.set_ylabel(rlabel, color=rcolor)
+    if x_lim is not None:
+        ax1.set_xlim(*x_lim)
+    if left_y_lim is not None:
+        ax1.set_ylim(*left_y_lim)
+    if right_y_lim is not None:
+        ax2.set_ylim(*right_y_lim)
     ax1.grid(True, alpha=0.3)
     ax1.set_title(title)
 
@@ -365,7 +435,15 @@ def save_dual_axis_timeline(
     plt.close(fig)
 
 
-def save_gpu_idle_highlight(plt, out_path: str, rows: List[Dict[str, float]], windows: List[Dict[str, float]], threshold: float) -> None:
+def save_gpu_idle_highlight(
+    plt,
+    out_path: str,
+    rows: List[Dict[str, float]],
+    windows: List[Dict[str, float]],
+    threshold: float,
+    x_lim: Optional[Tuple[float, float]] = None,
+    y_lim: Optional[Tuple[float, float]] = None,
+) -> None:
     if not rows:
         return
     x = [float(r["elapsed_sec"]) for r in rows]
@@ -377,6 +455,10 @@ def save_gpu_idle_highlight(plt, out_path: str, rows: List[Dict[str, float]], wi
         ax.axvspan(float(w["start_sec"]), float(w["end_sec"]), color="#ff7f0e", alpha=0.2)
     ax.set_xlabel("Elapsed Time (sec)")
     ax.set_ylabel("GPU Util (%)")
+    if x_lim is not None:
+        ax.set_xlim(*x_lim)
+    if y_lim is not None:
+        ax.set_ylim(*y_lim)
     ax.set_title("GPU Underutilization Windows")
     ax.grid(True, alpha=0.3)
     ax.legend(loc="best")
@@ -489,6 +571,142 @@ def save_cross_batch_phase_lines(plt, out_path: str, rows: List[Dict[str, float]
     plt.close(fig)
 
 
+def summarize_resource_metric(rows: List[Dict[str, float]], metric: str) -> Tuple[float, float]:
+    values = [float(r.get(f"{metric}_mean", float("nan"))) for r in rows]
+    clean = finite_values(values)
+    if not clean:
+        return float("nan"), float("nan")
+    return statistics.mean(clean), max(clean)
+
+
+def save_cross_batch_resource_summary(
+    plt,
+    out_path: str,
+    rows: List[Dict[str, float]],
+) -> None:
+    if not rows:
+        return
+    ordered = sorted(rows, key=lambda r: int(r["batch_size"]))
+    x = [int(r["batch_size"]) for r in ordered]
+
+    fig, axes = plt.subplots(3, 1, figsize=(10, 12), sharex=True)
+
+    axes[0].plot(x, [float(r.get("gpu_util_avg_pct", float("nan"))) for r in ordered], marker="o", linewidth=1.8, color="#1f77b4", label="GPU util avg")
+    axes[0].plot(x, [float(r.get("gpu_util_peak_pct", float("nan"))) for r in ordered], marker="s", linewidth=1.8, color="#ff7f0e", label="GPU util peak")
+    axes[0].set_ylabel("GPU Util (%)")
+    axes[0].grid(True, alpha=0.3)
+    axes[0].legend(loc="best")
+
+    axes[1].plot(x, [float(r.get("proc_cpu_avg_pct", float("nan"))) for r in ordered], marker="o", linewidth=1.8, color="#2ca02c", label="Process CPU avg")
+    axes[1].plot(x, [float(r.get("sys_cpu_avg_pct", float("nan"))) for r in ordered], marker="s", linewidth=1.8, color="#8c564b", label="System CPU avg")
+    axes[1].set_ylabel("CPU (%)")
+    axes[1].grid(True, alpha=0.3)
+    axes[1].legend(loc="best")
+
+    axes[2].plot(x, [float(r.get("gpu_mem_avg_mib", float("nan"))) for r in ordered], marker="o", linewidth=1.8, color="#d62728", label="GPU mem avg")
+    axes[2].plot(x, [float(r.get("gpu_mem_peak_mib", float("nan"))) for r in ordered], marker="s", linewidth=1.8, color="#9467bd", label="GPU mem peak")
+    axes[2].set_ylabel("GPU Mem (MiB)")
+    axes[2].set_xlabel("Batch Size")
+    axes[2].grid(True, alpha=0.3)
+    axes[2].legend(loc="best")
+
+    fig.suptitle("Profile C Resource Usage vs Batch Size")
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=150)
+    plt.close(fig)
+
+
+def save_cross_batch_resource_lines(
+    plt,
+    out_path: str,
+    rows: List[Dict[str, float]],
+    y_specs: List[Tuple[str, str, str]],
+    ylabel: str,
+    title: str,
+) -> None:
+    if not rows:
+        return
+    ordered = sorted(rows, key=lambda r: int(r["batch_size"]))
+    x = [int(r["batch_size"]) for r in ordered]
+    fig, ax = plt.subplots(figsize=(10, 5))
+    for key, label, color in y_specs:
+        y = [float(r.get(key, float("nan"))) for r in ordered]
+        ax.plot(x, y, marker="o", linewidth=1.8, color=color, label=label)
+    ax.set_xlabel("Batch Size")
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+    ax.grid(True, alpha=0.3)
+    ax.legend(loc="best")
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=150)
+    plt.close(fig)
+
+
+def compute_global_overlay_limits(
+    series_by_batch: Dict[int, List[Dict[str, float]]],
+    metrics: List[str],
+) -> Tuple[Optional[Tuple[float, float]], Optional[Tuple[float, float]]]:
+    x_lim, _ = compute_global_timeline_limits(series_by_batch, metrics)
+    vals: List[float] = []
+    for rows in series_by_batch.values():
+        for row in rows:
+            for metric in metrics:
+                mean = float(row.get(f"{metric}_mean", float("nan")))
+                std = float(row.get(f"{metric}_std", 0.0))
+                if math.isnan(mean):
+                    continue
+                vals.append(mean + (0.0 if math.isnan(std) else std))
+                vals.append(mean - (0.0 if math.isnan(std) else std))
+    return x_lim, padded_limits(vals)
+
+
+def save_cross_batch_timeline_metric_comparison(
+    plt,
+    out_path: str,
+    series_by_batch: Dict[int, List[Dict[str, float]]],
+    metrics: List[Tuple[str, str, str]],
+    title: str,
+    x_lim: Optional[Tuple[float, float]] = None,
+    y_lims: Optional[Dict[str, Tuple[float, float]]] = None,
+) -> None:
+    if not series_by_batch:
+        return
+    ordered_batches = sorted(series_by_batch.keys())
+    fig, axes = plt.subplots(len(metrics), 1, figsize=(12, max(4, 2.6 * len(metrics))), sharex=True)
+    if len(metrics) == 1:
+        axes = [axes]
+
+    cmap = plt.get_cmap("tab10")
+    batch_colors = {batch: cmap(idx % 10) for idx, batch in enumerate(ordered_batches)}
+
+    for ax, (metric, label, _) in zip(axes, metrics):
+        for batch in ordered_batches:
+            rows = series_by_batch.get(batch, [])
+            if not rows:
+                continue
+            x = [float(r["elapsed_sec"]) for r in rows]
+            y = [float(r.get(f"{metric}_mean", float("nan"))) for r in rows]
+            y_std = [float(r.get(f"{metric}_std", 0.0)) for r in rows]
+            color = batch_colors[batch]
+            upper = [a + b for a, b in zip(y, y_std)]
+            lower = [a - b for a, b in zip(y, y_std)]
+            ax.plot(x, y, color=color, linewidth=1.8, label=f"Batch {batch}")
+            ax.fill_between(x, lower, upper, color=color, alpha=0.12)
+        ax.set_ylabel(label)
+        if y_lims and metric in y_lims:
+            ax.set_ylim(*y_lims[metric])
+        ax.grid(True, alpha=0.3)
+        ax.legend(loc="best")
+
+    if x_lim is not None:
+        axes[-1].set_xlim(*x_lim)
+    axes[-1].set_xlabel("Elapsed Time (sec)")
+    fig.suptitle(title)
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=150)
+    plt.close(fig)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Aggregate OPT experiment outputs across repeats.")
     parser.add_argument("experiment_dir", type=str, help="Path to one run directory generated by run_opt_experiments.py")
@@ -511,7 +729,7 @@ def main() -> int:
     logger.info(f"Found manifest at {manifest_path}")
 
     manifest = read_json(manifest_path)
-    reports_dir = os.path.join(exp_dir, "reports")
+    reports_dir = os.path.join(exp_dir, "reports-new")
     figures_root = os.path.join(reports_dir, "figures")
     figures_cross = os.path.join(figures_root, "cross_batch")
     os.makedirs(reports_dir, exist_ok=True)
@@ -578,6 +796,16 @@ def main() -> int:
     }
 
     cross_rows: List[Dict[str, object]] = []
+    phase_timeline_by_batch: Dict[int, List[Dict[str, float]]] = {}
+    resource_timeline_by_profile: Dict[str, Dict[int, List[Dict[str, float]]]] = {
+        profile: {} for profile in RESOURCE_PROFILES
+    }
+    gpu_idle_windows_by_profile: Dict[str, Dict[int, List[Dict[str, float]]]] = {
+        profile: {} for profile in RESOURCE_PROFILES
+    }
+    cross_resource_rows_by_profile: Dict[str, List[Dict[str, object]]] = {
+        profile: [] for profile in RESOURCE_PROFILES
+    }
 
     for batch_size in batch_sizes:
         logger.info(f"Processing batch_size={batch_size}")
@@ -642,23 +870,9 @@ def main() -> int:
                     if not math.isnan(e):
                         energy_vals.append(e)
 
-                if profile == "C":
-                    simple_summary_path = os.path.join(run_dir, "simple_summary.json")
-                    simple_steps_path = os.path.join(run_dir, "simple_steps.csv")
+                if profile in RESOURCE_PROFILES:
                     resource_steps_path = os.path.join(run_dir, "resource_steps.csv")
                     resource_summary_path = os.path.join(run_dir, "resource_summary.json")
-
-                    if os.path.isfile(simple_summary_path):
-                        ss = read_json(simple_summary_path)
-                        av = ss.get("averages_ms", {})
-                        for m in PHASE_METRICS + ["step_ms"]:
-                            v = maybe_float(av.get(m))
-                            if v is not None:
-                                phase_vals[m].append(v)
-
-                    if os.path.isfile(simple_steps_path):
-                        srows = read_csv_rows(simple_steps_path)
-                        phase_timeline_series.append(build_timeline(srows, PHASE_METRICS))
 
                     if os.path.isfile(resource_steps_path):
                         rrows = read_csv_rows(resource_steps_path)
@@ -676,6 +890,22 @@ def main() -> int:
                             energy_vals.append(total_energy)
                             if iterations and iterations > 0:
                                 energy_per_step_vals.append(total_energy / iterations)
+
+                if profile == "C":
+                    simple_summary_path = os.path.join(run_dir, "simple_summary.json")
+                    simple_steps_path = os.path.join(run_dir, "simple_steps.csv")
+
+                    if os.path.isfile(simple_summary_path):
+                        ss = read_json(simple_summary_path)
+                        av = ss.get("averages_ms", {})
+                        for m in PHASE_METRICS + ["step_ms"]:
+                            v = maybe_float(av.get(m))
+                            if v is not None:
+                                phase_vals[m].append(v)
+
+                    if os.path.isfile(simple_steps_path):
+                        srows = read_csv_rows(simple_steps_path)
+                        phase_timeline_series.append(build_timeline(srows, PHASE_METRICS))
 
             if energy_vals:
                 e_mean, e_std = mean_std(energy_vals)
@@ -761,32 +991,37 @@ def main() -> int:
                     for m in PHASE_METRICS:
                         phase_fields.extend([f"{m}_mean", f"{m}_std", f"{m}_rolling_mean"])
                     write_csv(phase_timeline_csv, phase_agg, phase_fields)
+                    phase_timeline_by_batch[batch_size] = phase_agg
 
                 if resource_timeline_series:
                     resource_agg = aggregate_timelines(resource_timeline_series, RESOURCE_METRICS)
-                    resource_timeline_csv = os.path.join(batch_dir, "resource_timeline_aggregate.csv")
+                    profile_dir = os.path.join(batch_dir, f"profile_{profile}")
+                    os.makedirs(profile_dir, exist_ok=True)
+                    resource_timeline_csv = os.path.join(profile_dir, "resource_timeline_aggregate.csv")
                     resource_fields = ["elapsed_sec"]
                     for m in RESOURCE_METRICS:
                         resource_fields.extend([f"{m}_mean", f"{m}_std"])
                     write_csv(resource_timeline_csv, resource_agg, resource_fields)
 
-                    profile_c_dir = os.path.join(batch_dir, "profile_C")
-                    os.makedirs(profile_c_dir, exist_ok=True)
-                    # Backward-compatible names.
-                    write_csv(os.path.join(profile_c_dir, "timeline_aggregate.csv"), resource_agg, resource_fields)
+                    # Backward-compatible names for profile C.
+                    write_csv(os.path.join(profile_dir, "timeline_aggregate.csv"), resource_agg, resource_fields)
+                    if profile == "C":
+                        write_csv(os.path.join(batch_dir, "resource_timeline_aggregate.csv"), resource_agg, resource_fields)
+                    resource_timeline_by_profile[profile][batch_size] = resource_agg
 
                     windows = detect_gpu_idle_windows(resource_agg, args.gpu_util_threshold)
-                    underutil_csv = os.path.join(batch_dir, "underutilization_windows.csv")
+                    underutil_csv = os.path.join(profile_dir, "underutilization_windows.csv")
                     write_csv(
                         underutil_csv,
                         windows,
                         ["start_sec", "end_sec", "duration_sec", "avg_gpu_util"],
                     )
-                    with open(os.path.join(profile_c_dir, "gpu_idle_windows.json"), "w", encoding="utf-8") as fp:
+                    with open(os.path.join(profile_dir, "gpu_idle_windows.json"), "w", encoding="utf-8") as fp:
                         json.dump(windows, fp, indent=2)
                     p_report["gpu_idle_windows"] = windows
+                    gpu_idle_windows_by_profile[profile][batch_size] = windows
 
-                    narrative_path = os.path.join(profile_c_dir, "gpu_idle_narrative.txt")
+                    narrative_path = os.path.join(profile_dir, "gpu_idle_narrative.txt")
                     with open(narrative_path, "w", encoding="utf-8") as fp:
                         if not windows:
                             fp.write("No low GPU-utilization windows were detected for this batch.\n")
@@ -798,57 +1033,22 @@ def main() -> int:
                                     f"(duration={w['duration_sec']}s, avg_gpu_util={w['avg_gpu_util']:.2f}%)\n"
                                 )
 
-                    # Plots per batch for profile C.
-                    if plt is not None:
-                        save_timeline_with_band(
-                            plt,
-                            os.path.join(fig_batch_dir, "profileC_resource_timeline.png"),
-                            resource_agg,
-                            [
-                                ("gpu_util", "GPU Util (%)", "#1f77b4"),
-                                ("gpu_mem_used", "GPU Memory Used (MiB)", "#ff7f0e"),
-                                ("proc_cpu_percent", "Process CPU (%)", "#2ca02c"),
-                                ("sys_cpu_percent", "System CPU (%)", "#8c564b"),
-                                ("step_energy_kwh", "Step Energy (kWh)", "#9467bd"),
-                                ("cumulative_gpu_energy_kwh", "Cumulative GPU Energy (kWh)", "#d62728"),
-                            ],
-                            title=f"Profile C Resource Timelines (Batch {batch_size})",
-                        )
-                        save_dual_axis_timeline(
-                            plt,
-                            os.path.join(fig_batch_dir, "profileC_gpu_util_vs_mem.png"),
-                            resource_agg,
-                            ("gpu_util", "GPU Util (%)", "#1f77b4"),
-                            ("gpu_mem_used", "GPU Memory (MiB)", "#ff7f0e"),
-                            title=f"Profile C GPU Util and Memory (Batch {batch_size})",
-                        )
-                        save_dual_axis_timeline(
-                            plt,
-                            os.path.join(fig_batch_dir, "profileC_gpu_util_vs_step_energy.png"),
-                            resource_agg,
-                            ("gpu_util", "GPU Util (%)", "#1f77b4"),
-                            ("step_energy_kwh", "Step Energy (kWh)", "#9467bd"),
-                            title=f"Profile C GPU Util and Step Energy (Batch {batch_size})",
-                        )
-                        save_gpu_idle_highlight(
-                            plt,
-                            os.path.join(fig_batch_dir, "profileC_gpu_idle_windows_timeline.png"),
-                            resource_agg,
-                            windows,
-                            args.gpu_util_threshold,
-                        )
-                        save_histogram(
-                            plt,
-                            os.path.join(fig_batch_dir, "profileC_gpu_util_histogram.png"),
-                            [float(r.get("gpu_util_mean", float("nan"))) for r in resource_agg],
-                            title=f"Profile C GPU Util Distribution (Batch {batch_size})",
-                            xlabel="GPU Util (%)",
-                        )
-                        save_underutil_summary_plot(
-                            plt,
-                            os.path.join(fig_batch_dir, "profileC_underutilization_summary.png"),
-                            windows,
-                        )
+                    gpu_util_avg, gpu_util_peak = summarize_resource_metric(resource_agg, "gpu_util")
+                    gpu_mem_avg, gpu_mem_peak = summarize_resource_metric(resource_agg, "gpu_mem_used")
+                    proc_cpu_avg, _ = summarize_resource_metric(resource_agg, "proc_cpu_percent")
+                    sys_cpu_avg, _ = summarize_resource_metric(resource_agg, "sys_cpu_percent")
+                    cross_resource_rows_by_profile[profile].append(
+                        {
+                            "batch_size": batch_size,
+                            "profile": profile,
+                            "gpu_util_avg_pct": gpu_util_avg,
+                            "gpu_util_peak_pct": gpu_util_peak,
+                            "proc_cpu_avg_pct": proc_cpu_avg,
+                            "sys_cpu_avg_pct": sys_cpu_avg,
+                            "gpu_mem_avg_mib": gpu_mem_avg,
+                            "gpu_mem_peak_mib": gpu_mem_peak,
+                        }
+                    )
 
             # profile-level report
             if steps_per_sec_vals:
@@ -989,29 +1189,188 @@ def main() -> int:
                     },
                 )
 
-            phase_timeline_path = os.path.join(batch_dir, "phase_timeline_aggregate.csv")
-            if os.path.isfile(phase_timeline_path):
-                phase_rows = [
-                    {k: (maybe_float(v) if k != "elapsed_sec" else float(v)) for k, v in r.items()}
-                    for r in read_csv_rows(phase_timeline_path)
-                ]
-                save_overlay_timeline_with_band(
-                    plt,
-                    os.path.join(fig_batch_dir, "profileC_phase_timeline.png"),
-                    phase_rows,
-                    [
-                        ("forward_ms", "Forward (ms)", "#1f77b4"),
-                        ("backward_ms", "Backward (ms)", "#ff7f0e"),
-                        ("optimizer_step_ms", "Optimizer (ms)", "#2ca02c"),
-                    ],
-                    title=f"Profile C Phase Timelines (Batch {batch_size})",
-                    ylabel="Phase Time (ms)",
-                )
-
         batch_report = {"profiles": profile_reports}
         overall_report["batches"][f"batch_{batch_size}"] = batch_report
         with open(os.path.join(batch_dir, "summary.json"), "w", encoding="utf-8") as fp:
             json.dump(batch_report, fp, indent=2)
+
+    # Profile C phase timelines with consistent scales across batch sizes.
+    if plt is not None and phase_timeline_by_batch:
+        phase_x_lim, phase_y_lim = compute_global_overlay_limits(phase_timeline_by_batch, PHASE_METRICS)
+        for batch_size, phase_rows in phase_timeline_by_batch.items():
+            fig_batch_dir = os.path.join(figures_root, f"batch_{batch_size}")
+            save_overlay_timeline_with_band(
+                plt,
+                os.path.join(fig_batch_dir, "profileC_phase_timeline.png"),
+                phase_rows,
+                [
+                    ("forward_ms", "Forward (ms)", "#1f77b4"),
+                    ("backward_ms", "Backward (ms)", "#ff7f0e"),
+                    ("optimizer_step_ms", "Optimizer (ms)", "#2ca02c"),
+                ],
+                title=f"Profile C Phase Timelines (Batch {batch_size})",
+                ylabel="Phase Time (ms)",
+                x_lim=phase_x_lim,
+                y_lim=phase_y_lim,
+            )
+        _, phase_metric_lims = compute_global_timeline_limits(phase_timeline_by_batch, PHASE_METRICS)
+        save_cross_batch_timeline_metric_comparison(
+            plt,
+            os.path.join(figures_cross, "profileC_phase_timeline_compare_batches.png"),
+            phase_timeline_by_batch,
+            [
+                ("forward_ms", "Forward (ms)", "#1f77b4"),
+                ("backward_ms", "Backward (ms)", "#ff7f0e"),
+                ("optimizer_step_ms", "Optimizer (ms)", "#2ca02c"),
+            ],
+            title="Profile C Phase Timelines by Batch Size",
+            x_lim=phase_x_lim,
+            y_lims=phase_metric_lims,
+        )
+
+    # Resource plots with consistent scales across batch sizes.
+    resource_label = {"B": "Profile B", "C": "Profile C"}
+    resource_slug = {"B": "profileB", "C": "profileC"}
+    for profile in RESOURCE_PROFILES:
+        resource_timeline_by_batch = resource_timeline_by_profile.get(profile, {})
+        if plt is not None and resource_timeline_by_batch:
+            x_lim, metric_lims = compute_global_timeline_limits(resource_timeline_by_batch, RESOURCE_METRICS)
+            for batch_size, resource_agg in resource_timeline_by_batch.items():
+                fig_batch_dir = os.path.join(figures_root, f"batch_{batch_size}")
+                windows = gpu_idle_windows_by_profile.get(profile, {}).get(batch_size, [])
+                save_timeline_with_band(
+                    plt,
+                    os.path.join(fig_batch_dir, f"{resource_slug[profile]}_resource_timeline.png"),
+                    resource_agg,
+                    [
+                        ("gpu_util", "GPU Util (%)", "#1f77b4"),
+                        ("gpu_mem_used", "GPU Memory Used (MiB)", "#ff7f0e"),
+                        ("proc_cpu_percent", "Process CPU (%)", "#2ca02c"),
+                        ("sys_cpu_percent", "System CPU (%)", "#8c564b"),
+                        ("step_energy_kwh", "Step Energy (kWh)", "#9467bd"),
+                        ("cumulative_gpu_energy_kwh", "Cumulative GPU Energy (kWh)", "#d62728"),
+                    ],
+                    title=f"{resource_label[profile]} Resource Timelines (Batch {batch_size})",
+                    x_lim=x_lim,
+                    y_lims=metric_lims,
+                )
+                save_dual_axis_timeline(
+                    plt,
+                    os.path.join(fig_batch_dir, f"{resource_slug[profile]}_gpu_util_vs_mem.png"),
+                    resource_agg,
+                    ("gpu_util", "GPU Util (%)", "#1f77b4"),
+                    ("gpu_mem_used", "GPU Memory (MiB)", "#ff7f0e"),
+                    title=f"{resource_label[profile]} GPU Util and Memory (Batch {batch_size})",
+                    x_lim=x_lim,
+                    left_y_lim=metric_lims.get("gpu_util"),
+                    right_y_lim=metric_lims.get("gpu_mem_used"),
+                )
+                save_dual_axis_timeline(
+                    plt,
+                    os.path.join(fig_batch_dir, f"{resource_slug[profile]}_gpu_util_vs_step_energy.png"),
+                    resource_agg,
+                    ("gpu_util", "GPU Util (%)", "#1f77b4"),
+                    ("step_energy_kwh", "Step Energy (kWh)", "#9467bd"),
+                    title=f"{resource_label[profile]} GPU Util and Step Energy (Batch {batch_size})",
+                    x_lim=x_lim,
+                    left_y_lim=metric_lims.get("gpu_util"),
+                    right_y_lim=metric_lims.get("step_energy_kwh"),
+                )
+                save_gpu_idle_highlight(
+                    plt,
+                    os.path.join(fig_batch_dir, f"{resource_slug[profile]}_gpu_idle_windows_timeline.png"),
+                    resource_agg,
+                    windows,
+                    args.gpu_util_threshold,
+                    x_lim=x_lim,
+                    y_lim=metric_lims.get("gpu_util"),
+                )
+                save_histogram(
+                    plt,
+                    os.path.join(fig_batch_dir, f"{resource_slug[profile]}_gpu_util_histogram.png"),
+                    [float(r.get("gpu_util_mean", float("nan"))) for r in resource_agg],
+                    title=f"{resource_label[profile]} GPU Util Distribution (Batch {batch_size})",
+                    xlabel="GPU Util (%)",
+                )
+                save_underutil_summary_plot(
+                    plt,
+                    os.path.join(fig_batch_dir, f"{resource_slug[profile]}_underutilization_summary.png"),
+                    windows,
+                )
+            save_cross_batch_timeline_metric_comparison(
+                plt,
+                os.path.join(figures_cross, f"{resource_slug[profile]}_resource_timeline_compare_batches.png"),
+                resource_timeline_by_batch,
+                [
+                    ("gpu_util", "GPU Util (%)", "#1f77b4"),
+                    ("gpu_mem_used", "GPU Memory Used (MiB)", "#ff7f0e"),
+                    ("proc_cpu_percent", "Process CPU (%)", "#2ca02c"),
+                    ("sys_cpu_percent", "System CPU (%)", "#8c564b"),
+                    ("step_energy_kwh", "Step Energy (kWh)", "#9467bd"),
+                    ("cumulative_gpu_energy_kwh", "Cumulative GPU Energy (kWh)", "#d62728"),
+                ],
+                title=f"{resource_label[profile]} Resource Timelines by Batch Size",
+                x_lim=x_lim,
+                y_lims=metric_lims,
+            )
+
+        cross_resource_rows = cross_resource_rows_by_profile.get(profile, [])
+        if cross_resource_rows:
+            cross_resource_fields = [
+                "batch_size",
+                "profile",
+                "gpu_util_avg_pct",
+                "gpu_util_peak_pct",
+                "proc_cpu_avg_pct",
+                "sys_cpu_avg_pct",
+                "gpu_mem_avg_mib",
+                "gpu_mem_peak_mib",
+            ]
+            cross_resource_sorted = sorted(cross_resource_rows, key=lambda r: int(r["batch_size"]))
+            write_csv(
+                os.path.join(reports_dir, f"cross_batch_{resource_slug[profile]}_resources.csv"),
+                cross_resource_sorted,
+                cross_resource_fields,
+            )
+            if plt is not None:
+                save_cross_batch_resource_summary(
+                    plt,
+                    os.path.join(figures_cross, f"{resource_slug[profile]}_resources_vs_batch.png"),
+                    cross_resource_sorted,
+                )
+                save_cross_batch_resource_lines(
+                    plt,
+                    os.path.join(figures_cross, f"{resource_slug[profile]}_gpu_vs_batch.png"),
+                    cross_resource_sorted,
+                    [
+                        ("gpu_util_avg_pct", "GPU util avg (%)", "#1f77b4"),
+                        ("gpu_util_peak_pct", "GPU util peak (%)", "#ff7f0e"),
+                    ],
+                    ylabel="GPU Util (%)",
+                    title=f"{resource_label[profile]} GPU Utilization vs Batch Size",
+                )
+                save_cross_batch_resource_lines(
+                    plt,
+                    os.path.join(figures_cross, f"{resource_slug[profile]}_cpu_vs_batch.png"),
+                    cross_resource_sorted,
+                    [
+                        ("proc_cpu_avg_pct", "Process CPU avg (%)", "#2ca02c"),
+                        ("sys_cpu_avg_pct", "System CPU avg (%)", "#8c564b"),
+                    ],
+                    ylabel="CPU (%)",
+                    title=f"{resource_label[profile]} CPU Usage vs Batch Size",
+                )
+                save_cross_batch_resource_lines(
+                    plt,
+                    os.path.join(figures_cross, f"{resource_slug[profile]}_memory_vs_batch.png"),
+                    cross_resource_sorted,
+                    [
+                        ("gpu_mem_avg_mib", "GPU mem avg (MiB)", "#d62728"),
+                        ("gpu_mem_peak_mib", "GPU mem peak (MiB)", "#9467bd"),
+                    ],
+                    ylabel="GPU Memory (MiB)",
+                    title=f"{resource_label[profile]} GPU Memory vs Batch Size",
+                )
 
     # cross-batch csv
     cross_fields = [
